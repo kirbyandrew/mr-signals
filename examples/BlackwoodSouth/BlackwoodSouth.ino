@@ -1,7 +1,11 @@
 #include <mr_test.h>
 
+Rectangle my_rect;
+
 void setup() {
   // put your setup code here, to run once:
+
+  my_rect.set_values(1,2);
 
 }
 
