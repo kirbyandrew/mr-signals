@@ -1,11 +1,15 @@
-#include <mr_test.h>
+#include <sensor_interface.h>
+#include <switch_interface.h>
 
-Rectangle my_rect;
+using namespace mr_signals;
+
+Active_sensor active_sensor;
+Test_switch test_switch;
+
 
 void setup() {
   // put your setup code here, to run once:
-
-  my_rect.set_values(1,2);
+  test_switch.loop();
 
 }
 
