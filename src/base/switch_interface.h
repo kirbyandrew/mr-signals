@@ -13,16 +13,16 @@ namespace mr_signals {
 
 /// Bus (DCC, loconet etc) switch states
 enum Switch_direction {
-    SWITCH_CLOSED,
-    SWITCH_THROWN,
-    SWITCH_UNKNOWN
+    switch_closed,      /// The switch is in the closed position
+    switch_thrown,      /// The switch is in the open position
+    switch_unknown      /// The state of the switch is unknown
 };
 
 class Switch_interface {
 public:
-    virtual bool request_direction(Switch_direction)=0;
+    virtual bool request_direction(const Switch_direction)=0;
     virtual void loop()=0;
-    virtual ~Switch_interface() {}
+    virtual ~Switch_interface() = default;
 
 };
 
@@ -33,10 +33,10 @@ public:
 
 
     Test_switch(int num=-1) : num_(num), loop_cnt_(0) {
-        direction_ = SWITCH_UNKNOWN;
+        direction_ = switch_unknown;
     }
 
-    bool request_direction(Switch_direction direction) override {
+    bool request_direction(const Switch_direction direction) override {
 
         bool changed=false;
 
@@ -53,7 +53,7 @@ public:
         loop_cnt_++;
     }
 
-    /// Let tests access the switche's direction
+    /// Let tests access the switch's direction
     Switch_direction  get_direction() { return direction_; }
 
     /// Let tests access the number of times .loop() has been called

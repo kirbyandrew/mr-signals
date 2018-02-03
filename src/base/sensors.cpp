@@ -11,24 +11,32 @@ using namespace mr_signals;
 
 bool Sensor_base::get_state()
 {
-    return state_;
+    return (bool) state_;
 }
 
 bool Sensor_base::is_indeterminate()
 {
-    return indeterminate_;
+    return (bool) indeterminate_;
 }
 
-bool Sensor_base::set_state(bool state)
+bool Sensor_base::set_state(const bool state)
 {
     bool changed = false;
 
-    if (state != state_) {
-        state_ = state;
+
+    // If the sensor state is indeterminate, always mark as a change
+    if(indeterminate_) {
         changed = true;
     }
 
-    indeterminate_ = false;
+    // Check if the state of the sensor changes
+    if (state != (bool) state_) {
+        state_ = (true==state) ? 1 : 0;
+        changed = true;
+    }
+
+    // Once set, the state is no longer indeterminate
+    indeterminate_ = 0;
 
     return changed;
 }

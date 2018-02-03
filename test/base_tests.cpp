@@ -53,21 +53,33 @@ protected:
 };
 
 
+TEST(AspectNameStringTest, gets) {
+    EXPECT_STREQ("u",::mr_signals::get_aspect_string(unknown));
+
+    EXPECT_STREQ("d",::mr_signals::get_aspect_string(dark));
+    EXPECT_STREQ("r",::mr_signals::get_aspect_string(red));
+    EXPECT_STREQ("y",::mr_signals::get_aspect_string(yellow));
+    EXPECT_STREQ("g",::mr_signals::get_aspect_string(green));
+    EXPECT_STREQ("e",::mr_signals::get_aspect_string((Head_aspect)20));  // something invalid
+}
+
+
+
 TEST_F (Test_switch_test, TestSwitchBehavior){
 
-    EXPECT_EQ(SWITCH_UNKNOWN,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
     EXPECT_EQ(0,test_switch_1_.get_loop_cnt());
 
-    EXPECT_TRUE(test_switch_1_.request_direction(SWITCH_THROWN));
-    EXPECT_EQ(SWITCH_THROWN,test_switch_1_.get_direction());
+    EXPECT_TRUE(test_switch_1_.request_direction(switch_thrown));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
     EXPECT_EQ(0,test_switch_1_.get_loop_cnt());
 
-    EXPECT_FALSE(test_switch_1_.request_direction(SWITCH_THROWN));
-    EXPECT_EQ(SWITCH_THROWN,test_switch_1_.get_direction());
+    EXPECT_FALSE(test_switch_1_.request_direction(switch_thrown));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
     EXPECT_EQ(0,test_switch_1_.get_loop_cnt());
 
-    EXPECT_TRUE(test_switch_1_.request_direction(SWITCH_CLOSED));
-    EXPECT_EQ(SWITCH_CLOSED,test_switch_1_.get_direction());
+    EXPECT_TRUE(test_switch_1_.request_direction(switch_closed));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
     EXPECT_EQ(0,test_switch_1_.get_loop_cnt());
 
     test_switch_1_.loop();

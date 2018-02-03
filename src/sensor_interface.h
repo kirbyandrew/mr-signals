@@ -35,7 +35,7 @@ public:
      */
     virtual bool is_indeterminate() = 0;
 
-    virtual ~Sensor_interface() {}
+    virtual ~Sensor_interface() = default;
 };
 
 
@@ -47,12 +47,16 @@ public:
  *
  * In addition to the functions provided by Sensor_interface, supports a method to
  * set the state of the sensor
+ *
+ * Global variable memory
+ * First object   : 15 bytes
+ * Subsequent     : +3 bytes
  */
 class Sensor_base : public Sensor_interface {
 
 public:
 
-    Sensor_base() { indeterminate_ = true; }
+    Sensor_base() { indeterminate_ = 1; }
 
     /**
      * Obtain the state of the sensor
@@ -74,12 +78,12 @@ public:
      * \param state - true/false = active/inactive
      * \return true if the sensor's state changed
      */
-    bool set_state(bool state);
+    bool set_state(const bool state);
 
 protected:
-    bool indeterminate_;    /// Indicates that the sensor state is not known when true (set_state() hasn't been called)
-    bool state_;            /// State of the sensor (active/inactive = true/false)
-
+    char state_ : 1;            /// The current state of the sensor (0 = inactive, 1 = active)
+    char indeterminate_: 1;     /// Indicates that the state of the sensor is
+                                /// not yet known (.set_state() has not been called) when 1
 };
 
 
@@ -96,9 +100,7 @@ public:
 };
 
 
-
 }   // namespace mr_signals
-
 
 
 #endif /* SENSOR_H_ */
