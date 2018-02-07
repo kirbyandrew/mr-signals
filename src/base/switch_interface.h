@@ -36,17 +36,13 @@ public:
         direction_ = switch_unknown;
     }
 
+    /// In this test implementation, the request to change direction is always
+    /// successful.  Tests for
     bool request_direction(const Switch_direction direction) override {
-
-        bool changed=false;
-
-        if(direction != direction_) {
-            changed = true;
-        }
 
         direction_ = direction;
 
-        return(changed);
+        return true;
     }
 
     void loop() override {
