@@ -40,11 +40,11 @@ class Quadln_s_head : public Head_interface
 
 public:
 
-    // Requires a name for the head and the associated switch and midpoint for the QuadLN_S
+    /// Requires a name for the head and the associated switch and midpoint for the QuadLN_S
     Quadln_s_head(const char *name, Switch_interface& switch_1,
             Switch_interface& midpoint_switch);
 
-    // Specialized output functionality for the QuadLN_S
+    /// Specialized output functionality for the QuadLN_S
     bool request_outputs(const Head_aspect) override;
 
     void loop() override;

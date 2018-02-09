@@ -33,9 +33,12 @@ class Double_switch_head : public Head_interface
 
 public:
 
-    Double_switch_head(const char *name, Switch_interface& switch_1, Switch_interface& switch_2);
+    /// Initialize the head with a name and the two switches it controls
+    Double_switch_head(const char *name, Switch_interface& switch_1,
+            Switch_interface& switch_2);
 
-    bool request_aspect(const Head_aspect) override;
+    /// Specialized output functionality
+    bool request_outputs(const Head_aspect) override;
 
     void loop() override;
 

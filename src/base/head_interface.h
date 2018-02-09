@@ -71,10 +71,22 @@ public:
 
 
 protected:
-    // Sets the internal aspect_ state
+    /// Sets the internal aspect_ state
     void set_aspect(Head_aspect aspect);
 
-    virtual bool request_outputs(Head_aspect aspect) { return false;}
+    /**
+     * Handles the concrete setting of output states when called
+     * by the default implementation of ::request_aspect()
+     *
+     * Each concrete head class must implement this to control the
+     * specific output management to realize each aspect it supports
+     *
+     * @param aspect -  the requested aspect
+     * @return bool -   true  = Outputs were successfully set (or queued)
+     *                  false = The output could not be set or and invalid
+     *                          aspect was requested
+     */
+    virtual bool request_outputs(Head_aspect aspect) = 0;
 
 private:
     #define head_name_len 5

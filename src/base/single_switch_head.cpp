@@ -18,51 +18,25 @@ Single_switch_head::Single_switch_head(const char* name,
 }
 
 
-bool Single_switch_head::request_aspect(const Head_aspect aspect)
+bool Single_switch_head::request_outputs(const Head_aspect aspect)
 {
     bool result = false;
 
-    if (!is_held()) {
+    switch (aspect) {
+    case dark:          // Close (turn off) the switch for dark & red
+    case red:
+        result = switch_1_.request_direction(switch_closed);
+        break;
 
-        if (aspect != get_aspect()) {
+    case yellow:        // Throw (turn on) the switch for other valid aspects
+    case green:
+        result = switch_1_.request_direction(switch_thrown);
+        break;
 
-            // Request is to change the aspect of the head
-            switch (aspect) {
-            case dark:
-            case red:
-                // Close (turn off) the switch for dark
-                result = switch_1_.request_direction(switch_closed);
-                break;
+    case unknown:       // Take no action if the state is invalid or unknown
+    default:
+        break;
 
-            case yellow:
-            case green:
-                // Throw (turn on) the switch for other valid aspects
-                result = switch_1_.request_direction(switch_thrown);
-                break;
-
-            case unknown:
-            default:
-                // Take no action if the state is invalid or unknown
-                break;
-
-            }   // switch(aspect)
-
-            if (true == result) {
-                // Update internal state
-                set_aspect(aspect);
-            }
-        } else {
-            // If Aspect is already the same, report a successful setting
-            // of the aspect
-            result = true;
-        }
-    } else {
-
-        // If the head's aspect is being held, only report success if the
-        // requested aspect is already set
-        if(get_aspect()==aspect) {
-            result = true;
-        }
     }
 
     return result;

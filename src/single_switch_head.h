@@ -27,11 +27,11 @@ class Single_switch_head : public Head_interface
 {
 public:
 
-    /// Initialize the head with a name (max length single_switch_name_len)
-    /// and the output switch
+    /// Initialize the head with a name and the output switch
     Single_switch_head(const char* name, Switch_interface& switch_1);
 
-    bool request_aspect(const Head_aspect) override;
+    /// Specialized output functionality for the QuadLN_S
+    bool request_outputs(const Head_aspect) override;
 
     void loop() override;
 
