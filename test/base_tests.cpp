@@ -185,9 +185,6 @@ TEST_F(Quadln_s_test,LockedSwitches)
     EXPECT_TRUE(head_->request_aspect(red));
     EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
     EXPECT_EQ(switch_closed,midpoint_switch_.get_direction());
-
-
-
 }
 
 TEST_F(Quadln_s_test,SwitchStates)
@@ -227,6 +224,7 @@ TEST_F(Quadln_s_test,SwitchStates)
     EXPECT_EQ(switch_thrown,midpoint_switch_.get_direction());
 }
 
+
 TEST_F(Double_switch_test,SwitchStates)
 {
     SetUp();
@@ -235,7 +233,52 @@ TEST_F(Double_switch_test,SwitchStates)
     EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
     EXPECT_EQ(unknown,head_->get_aspect());
 
+    // After locking switch_1_, so that it fails to set, setting to
+    // any of the 4 supported aspects should fail and no switch states
+    // should change as switch_1_ is tested first
+    test_switch_1_.set_lock(true);
 
+    EXPECT_FALSE(head_->request_aspect(dark));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(green));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(red));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+
+    // If switch 2 is locked and switch 1 can set, each
+    // supported aspect should still fail but switch_1 should
+    // now set
+    test_switch_1_.set_lock(false);
+    test_switch_2_.set_lock(true);
+
+    EXPECT_FALSE(head_->request_aspect(dark));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(green));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(red));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+
+    // Test all of the aspects once the second switch is
+    // unlocked
+    test_switch_2_.set_lock(false);
     EXPECT_TRUE(head_->request_aspect(dark));
     EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
     EXPECT_EQ(switch_closed,test_switch_2_.get_direction());
@@ -252,6 +295,7 @@ TEST_F(Double_switch_test,SwitchStates)
     EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
     EXPECT_EQ(switch_thrown,test_switch_2_.get_direction());
 }
+
 
 TEST_F(Double_switch_test,HeldStates)
 {
