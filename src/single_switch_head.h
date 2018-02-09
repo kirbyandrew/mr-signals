@@ -9,9 +9,9 @@
 #define SRC_SINGLE_SWITCH_HEAD_H_
 
 
-#include "head_interface.h"
+#include "base/head_interface.h"
 #include "sensor_interface.h"
-#include "switch_interface.h"
+#include "base/switch_interface.h"
 
 namespace mr_signals {
 
@@ -25,32 +25,18 @@ namespace mr_signals {
  */
 class Single_switch_head : public Head_interface
 {
-    #define single_switch_name_len 5
-
 public:
 
     /// Initialize the head with a name (max length single_switch_name_len)
     /// and the output switch
     Single_switch_head(const char* name, Switch_interface& switch_1);
 
-    Head_aspect get_aspect() override;
-    bool set_aspect(const Head_aspect) override;
+    bool request_aspect(const Head_aspect) override;
 
-    const char *get_name() override;
-
-    // TODO: Why does this return bool?
-    bool loop() override;
-
-    void set_held(const bool) override;
-    bool is_held() override;
-
+    void loop() override;
 
 private:
-    Switch_interface& switch_1_;      /// The output switch this head controls
-    char name_[single_switch_name_len+1];   /// Name of the head
-    Head_aspect aspect_;                    /// The head's current aspect
-
-    char held_ : 1;                         /// The state of this head is being held
+    Switch_interface& switch_1_;
 };
 
 
@@ -70,7 +56,7 @@ public:
                                 Switch_interface& switch_1,
                                 Sensor_interface& sensor);
 
-    bool set_aspect(const Head_aspect aspect) override;
+    bool request_aspect(const Head_aspect aspect) override;
 
 private:
     Sensor_interface& sensor_;

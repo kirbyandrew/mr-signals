@@ -14,9 +14,30 @@
 #include "head_interface.h"
 #include "switch_interface.h"
 #include "single_switch_head.h"
+#include "double_switch_head.h"
 
 
 using namespace mr_signals;
+
+
+class Double_switch_test : public ::testing::Test {
+
+protected:
+    void SetUp()
+    {
+        head_ = new Double_switch_head("",test_switch_1_,test_switch_2_);
+    }
+
+    void TearDown()
+    {
+        delete head_;
+    }
+
+    Double_switch_head* head_;
+    Test_switch test_switch_1_;
+    Test_switch test_switch_2_;
+};
+
 
 
 class Single_switch_sensor_test : public ::testing::Test {
@@ -88,9 +109,87 @@ protected:
     Sensor_base base_sensor_2_;
 };
 
+TEST_F(Double_switch_test,SwitchStates)
+{
+    SetUp();
+
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,test_switch_2_.get_direction());
+    EXPECT_EQ(unknown,head_->get_aspect());
+
+
+    EXPECT_TRUE(head_->request_aspect(dark));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_closed,test_switch_2_.get_direction());
+
+    EXPECT_TRUE(head_->request_aspect(green));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_closed,test_switch_2_.get_direction());
+
+    EXPECT_TRUE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_thrown,test_switch_2_.get_direction());
+
+    EXPECT_TRUE(head_->request_aspect(red));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_thrown,test_switch_2_.get_direction());
+}
+
+TEST_F(Double_switch_test,HeldStates)
+{
+    SetUp();
+
+    // Check hold request is rejected if head's aspect is unknown (default)
+    head_->set_held(true);
+    EXPECT_FALSE(head_->is_held());
+
+    // Check hold request is accepted if aspect is red
+    EXPECT_TRUE(head_->request_aspect(red));
+    EXPECT_FALSE(head_->is_held());
+    head_->set_held(true);
+    EXPECT_TRUE(head_->is_held());
+
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_thrown,test_switch_2_.get_direction());
+
+
+    // Head remains held if the same aspect is requestd
+    EXPECT_TRUE(head_->request_aspect(red));
+    EXPECT_TRUE(head_->is_held());
+
+    // Head should reject all changes while held, and still report red
+    EXPECT_FALSE(head_->request_aspect(yellow));
+    EXPECT_FALSE(head_->request_aspect(green));
+    EXPECT_FALSE(head_->request_aspect(dark));
+
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_thrown,test_switch_2_.get_direction());
+
+
+    EXPECT_TRUE(head_->is_held());
+    EXPECT_EQ(red,head_->get_aspect());
+
+    // Setting the held aspect should report success
+    EXPECT_TRUE(head_->request_aspect(red));
+
+
+    // Clearing the hold should not change the aspect state, and the mast
+    // should now accept changes
+    head_->set_held(false);
+    EXPECT_FALSE(head_->is_held());
+    EXPECT_EQ(red,head_->get_aspect());
+
+    EXPECT_TRUE(head_->request_aspect(green));
+    EXPECT_EQ(green,head_->get_aspect());
+    EXPECT_FALSE(head_->is_held());
+
+}
+
 TEST_F(Single_switch_sensor_test,SwitchStates)
 {
     SetUp();
+
+    SCOPED_TRACE("Sensor unknown");
 
     // Run these tests twice; once with the sensor indeterminate and
     // once with it set to false
@@ -98,20 +197,22 @@ TEST_F(Single_switch_sensor_test,SwitchStates)
         switch_1_.request_direction(switch_thrown);
 
         // yellow & green should not be accepted while sensor is indeterminate or inactive
-        EXPECT_FALSE(head_->set_aspect(yellow));
+        EXPECT_FALSE(head_->request_aspect(yellow));
         EXPECT_EQ(switch_thrown,switch_1_.get_direction());
-        EXPECT_FALSE(head_->set_aspect(green));
+        EXPECT_FALSE(head_->request_aspect(green));
         EXPECT_EQ(switch_thrown,switch_1_.get_direction());
 
         // red and dark should set in all cases
-        EXPECT_TRUE(head_->set_aspect(red));
+        EXPECT_TRUE(head_->request_aspect(red));
         EXPECT_EQ(switch_closed,switch_1_.get_direction());
 
         switch_1_.request_direction(switch_thrown);
-        EXPECT_TRUE(head_->set_aspect(dark));
+        EXPECT_TRUE(head_->request_aspect(dark));
         EXPECT_EQ(switch_closed,switch_1_.get_direction());
 
         sensor_1_.set_state(false);
+
+        SCOPED_TRACE("sensor:=false");
     }
 
     // With the sensor active, all states should be accepted and change
@@ -119,16 +220,16 @@ TEST_F(Single_switch_sensor_test,SwitchStates)
     sensor_1_.set_state(true);
 
     switch_1_.request_direction(switch_thrown);
-    EXPECT_TRUE(head_->set_aspect(red));
+    EXPECT_TRUE(head_->request_aspect(red));
     EXPECT_EQ(switch_closed,switch_1_.get_direction());
 
-    EXPECT_TRUE(head_->set_aspect(yellow));
+    EXPECT_TRUE(head_->request_aspect(yellow));
     EXPECT_EQ(switch_thrown,switch_1_.get_direction());
 
-    EXPECT_TRUE(head_->set_aspect(dark));
+    EXPECT_TRUE(head_->request_aspect(dark));
     EXPECT_EQ(switch_closed,switch_1_.get_direction());
 
-    EXPECT_TRUE(head_->set_aspect(green));
+    EXPECT_TRUE(head_->request_aspect(green));
     EXPECT_EQ(switch_thrown,switch_1_.get_direction());
 }
 
@@ -139,19 +240,19 @@ TEST_F(Single_switch_test,SwitchStates)
     EXPECT_EQ(unknown,head_->get_aspect());
 
 
-    EXPECT_TRUE(head_->set_aspect(red));
+    EXPECT_TRUE(head_->request_aspect(red));
     EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
 
-    EXPECT_TRUE(head_->set_aspect(red));
+    EXPECT_TRUE(head_->request_aspect(red));
     EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
 
-    EXPECT_TRUE(head_->set_aspect(yellow));
+    EXPECT_TRUE(head_->request_aspect(yellow));
     EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
 
-    EXPECT_TRUE(head_->set_aspect(dark));
+    EXPECT_TRUE(head_->request_aspect(dark));
     EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
 
-    EXPECT_TRUE(head_->set_aspect(green));
+    EXPECT_TRUE(head_->request_aspect(green));
     EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
 }
 
@@ -163,26 +264,26 @@ TEST_F(Single_switch_test,HeldStates)
     EXPECT_FALSE(head_->is_held());
 
     // Check hold request is accepted if aspect is red
-    EXPECT_TRUE(head_->set_aspect(red));
+    EXPECT_TRUE(head_->request_aspect(red));
     EXPECT_FALSE(head_->is_held());
     head_->set_held(true);
     EXPECT_TRUE(head_->is_held());
 
     // Head remains held if the same aspect is requestd
-    EXPECT_TRUE(head_->set_aspect(red));
+    EXPECT_TRUE(head_->request_aspect(red));
     EXPECT_TRUE(head_->is_held());
 
     // Head should reject all changes while held, and still report red
-    EXPECT_FALSE(head_->set_aspect(yellow));
-    EXPECT_FALSE(head_->set_aspect(green));
-    EXPECT_FALSE(head_->set_aspect(dark));
+    EXPECT_FALSE(head_->request_aspect(yellow));
+    EXPECT_FALSE(head_->request_aspect(green));
+    EXPECT_FALSE(head_->request_aspect(dark));
 
 
     EXPECT_TRUE(head_->is_held());
     EXPECT_EQ(red,head_->get_aspect());
 
     // Setting the held aspect should report success
-    EXPECT_TRUE(head_->set_aspect(red));
+    EXPECT_TRUE(head_->request_aspect(red));
 
 
     // Clearing the hold should not change the aspect state, and the mast
@@ -191,7 +292,7 @@ TEST_F(Single_switch_test,HeldStates)
     EXPECT_FALSE(head_->is_held());
     EXPECT_EQ(red,head_->get_aspect());
 
-    EXPECT_TRUE(head_->set_aspect(green));
+    EXPECT_TRUE(head_->request_aspect(green));
     EXPECT_EQ(green,head_->get_aspect());
     EXPECT_FALSE(head_->is_held());
 

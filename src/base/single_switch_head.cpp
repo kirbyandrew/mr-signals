@@ -5,32 +5,26 @@
  *      Author: ackpu
  */
 
-#include <string.h>
 #include "single_switch_head.h"
 
 using namespace mr_signals;
 
+
 Single_switch_head::Single_switch_head(const char* name,
         Switch_interface& switch_1) :
-        switch_1_(switch_1), aspect_(unknown), held_(false)
+        Head_interface(name), switch_1_(switch_1)
 {
 
-    strncpy(name_, name, single_switch_name_len);
-    name_[single_switch_name_len] = '\0';
 }
 
-Head_aspect Single_switch_head::get_aspect()
-{
-    return aspect_;
-}
 
-bool Single_switch_head::set_aspect(const Head_aspect aspect)
+bool Single_switch_head::request_aspect(const Head_aspect aspect)
 {
     bool result = false;
 
     if (!is_held()) {
 
-        if (aspect != aspect_) {
+        if (aspect != get_aspect()) {
 
             // Request is to change the aspect of the head
             switch (aspect) {
@@ -55,7 +49,7 @@ bool Single_switch_head::set_aspect(const Head_aspect aspect)
 
             if (true == result) {
                 // Update internal state
-                aspect_ = aspect;
+                set_aspect(aspect);
             }
         } else {
             // If Aspect is already the same, report a successful setting
@@ -66,7 +60,7 @@ bool Single_switch_head::set_aspect(const Head_aspect aspect)
 
         // If the head's aspect is being held, only report success if the
         // requested aspect is already set
-        if(aspect == aspect_) {
+        if(get_aspect()==aspect) {
             result = true;
         }
     }
@@ -74,26 +68,12 @@ bool Single_switch_head::set_aspect(const Head_aspect aspect)
     return result;
 }
 
-const char* Single_switch_head::get_name()
-{
-    return name_;
-}
 
-bool Single_switch_head::loop()
+void Single_switch_head::loop()
 {
     switch_1_.loop();
-    return false;
 }
 
-void Single_switch_head::set_held(const bool held)
-{
-    held_ = (aspect_ != unknown && true==held) ? 1 : 0;
-}
-
-
-bool Single_switch_head::is_held() {
-    return held_ ? true : false;
-}
 
 
 
@@ -114,39 +94,20 @@ Single_switch_sensor_head::Single_switch_sensor_head(const char *name,
  * @param aspect
  * @return true if the state of the head changes
  */
-bool Single_switch_sensor_head::set_aspect(const Head_aspect aspect)
+bool Single_switch_sensor_head::request_aspect(const Head_aspect aspect)
 {
 
     if( (dark == aspect) ||
         (red  == aspect) ||
         (!sensor_.is_indeterminate() && true == sensor_.get_state()))
     {
-        return Single_switch_head::set_aspect(aspect);
+        return Single_switch_head::request_aspect(aspect);
     }
     else
     {
         return false;
     }
 }
-
-  /*
-// Overriddes SetAspect from SingleSwitchHead
-// Added logic is to check if the associated sensor is active before setting a non-dark/red aspect
-bool SingleSwitchSensorHead::SetAspect(const head_interface::headAspect aspect)
-{
-    if( (head_interface::dark == aspect) ||
-        (head_interface::red  == aspect) ||
-        (!sensor_.indeterminate() && true == sensor_.getState()))
-    {
-        return SingleSwitchHead::SetAspect(aspect);
-    }
-    else
-    {
-        // Sensor not active, so indicate a failure to set the requested aspect.
-        return false;
-    }
-}
- */
 
 
 
