@@ -27,23 +27,27 @@ bool Double_switch_head::request_aspect(const Head_aspect aspect)
             // Request is to change the aspect of the head
             switch (aspect) {
             case dark:
-                if (true == switch_1_.request_direction(switch_closed));
-                result = switch_2_.request_direction(switch_closed);
+                if (true == switch_1_.request_direction(switch_closed)) {
+                    result = switch_2_.request_direction(switch_closed);
+                }
                 break;
 
             case green:
-                if (true == switch_1_.request_direction(switch_thrown));
-                result = switch_2_.request_direction(switch_closed);
+                if (true == switch_1_.request_direction(switch_thrown)) {
+                    result = switch_2_.request_direction(switch_closed);
+                }
                 break;
 
             case yellow:
-                if (true == switch_1_.request_direction(switch_thrown));
-                result = switch_2_.request_direction(switch_thrown);
+                if (true == switch_1_.request_direction(switch_thrown)) {
+                    result = switch_2_.request_direction(switch_thrown);
+                }
                 break;
 
             case red:
-                if (true == switch_1_.request_direction(switch_closed));
-                result = switch_2_.request_direction(switch_thrown);
+                if (true == switch_1_.request_direction(switch_closed)) {
+                    result = switch_2_.request_direction(switch_thrown);
+                }
                 break;
 
             case unknown:
@@ -56,7 +60,6 @@ bool Double_switch_head::request_aspect(const Head_aspect aspect)
             if(result)
             {
                 set_aspect(aspect);
-  //              Debug << "Setting Head to "<< aspect_ << "\n";
             }
         }
         else

@@ -15,9 +15,28 @@
 #include "switch_interface.h"
 #include "single_switch_head.h"
 #include "double_switch_head.h"
-
+#include "quadln_s_head.h"
 
 using namespace mr_signals;
+
+
+class Quadln_s_test : public ::testing::Test {
+
+protected:
+    void SetUp()
+    {
+        head_ = new Quadln_s_head("",test_switch_1_,midpoint_switch_);
+    }
+
+    void TearDown()
+    {
+        delete head_;
+    }
+
+    Quadln_s_head* head_;
+    Test_switch test_switch_1_;
+    Test_switch midpoint_switch_;
+};
 
 
 class Double_switch_test : public ::testing::Test {
@@ -108,6 +127,105 @@ protected:
     Sensor_base base_sensor_1_;
     Sensor_base base_sensor_2_;
 };
+
+TEST_F(Quadln_s_test,LockedSwitches)
+{
+    SetUp();
+
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+    EXPECT_EQ(unknown,head_->get_aspect());
+
+    // After locking switch_1_, so that it fails to set, setting to
+    // green or red should fail and no switch states should change
+    test_switch_1_.set_lock(true);
+
+    EXPECT_FALSE(head_->request_aspect(green));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(red));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+
+    // Locking the midpoint switch should cause yellow to fail
+    midpoint_switch_.set_lock(true);
+    EXPECT_FALSE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+
+    // Unlock switch 1, try red & green again.  Should still
+    // fail because the midpoint is locked, but we'll see switch_1
+    // change (its set first in the logic)
+    test_switch_1_.set_lock(false);
+    EXPECT_FALSE(head_->request_aspect(green));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(red));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+
+    EXPECT_FALSE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+
+
+    // Clear the lock so that test_switch_1_ can successfully change
+    // and check that the expected states still work
+    midpoint_switch_.set_lock(false);
+    EXPECT_TRUE(head_->request_aspect(green));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_closed,midpoint_switch_.get_direction());
+
+    EXPECT_TRUE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_thrown,midpoint_switch_.get_direction());
+
+    EXPECT_TRUE(head_->request_aspect(red));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_closed,midpoint_switch_.get_direction());
+
+
+
+}
+
+TEST_F(Quadln_s_test,SwitchStates)
+{
+    SetUp();
+
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+    EXPECT_EQ(unknown,head_->get_aspect());
+
+    // aspect dark should be rejected by the head and not affect the switches
+    EXPECT_FALSE(head_->request_aspect(dark));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_unknown,midpoint_switch_.get_direction());
+
+    // Going to yellow should not change the value of test_switch
+    // ... check after each transition to yellow
+    EXPECT_TRUE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_unknown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_thrown,midpoint_switch_.get_direction());
+
+    // Exercise the basic states
+    EXPECT_TRUE(head_->request_aspect(green));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_closed,midpoint_switch_.get_direction());
+
+    EXPECT_TRUE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_thrown,midpoint_switch_.get_direction());
+
+    EXPECT_TRUE(head_->request_aspect(red));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_closed,midpoint_switch_.get_direction());
+
+    EXPECT_TRUE(head_->request_aspect(yellow));
+    EXPECT_EQ(switch_closed,test_switch_1_.get_direction());
+    EXPECT_EQ(switch_thrown,midpoint_switch_.get_direction());
+}
 
 TEST_F(Double_switch_test,SwitchStates)
 {

@@ -21,6 +21,15 @@ enum Head_aspect
     max_head_aspect /// For range checking: valid: >= unknown && < max_head_aspect
 };
 
+
+
+/**
+ * Base interface for signal heads
+ *
+ * This class should be inherited from to realize a specific head's
+ * implementation, whether that be to use switches, discrete outputs,
+ * whatever
+ */
 class Head_interface
 {
 public:
@@ -28,19 +37,33 @@ public:
     /**
      * Method to request a new aspect for the head
      *
+     * A default implementation of common logic is provided by this class,
+     * with specialization being implemented through overriding
+     * request_outputs(), but the entire function can be overidden if needed
+     *
      * @param aspect - the new aspect
      * @return bool -   true  = aspect was accepted / change was successful
      *                  false = aspect was rejected or change was not made
      *                  (switch could not be written etc)
      */
-    virtual bool request_aspect(const Head_aspect) = 0;
+    virtual bool request_aspect(const Head_aspect);
+
+
+    /// Allows anything attached to the head to have its processing loop executed
     virtual void loop() = 0;
 
-    virtual Head_aspect get_aspect();   /// Get the current aspect of the head
-    virtual const char* get_name();     /// Get the name of the head
+    /// Get the current aspect of the head
+    virtual Head_aspect get_aspect();
 
+    /// Get the name of the head
+    virtual const char* get_name();
+
+    /// 'Lock' the current aspect of the head. Ignored if the state is unknown
     void set_held(const bool);
+
+    /// Indicate whether the head's aspect is currently locked
     bool is_held();
+
 
     Head_interface(const char* name);
     virtual ~Head_interface() = default;
@@ -48,8 +71,10 @@ public:
 
 
 protected:
-    void set_aspect(Head_aspect aspect);    // Sets the internal aspect_ state
+    // Sets the internal aspect_ state
+    void set_aspect(Head_aspect aspect);
 
+    virtual bool request_outputs(Head_aspect aspect) { return false;}
 
 private:
     #define head_name_len 5

@@ -11,7 +11,14 @@
 namespace mr_signals {
 
 /**
- * Fundamental sensor interface for classes that use sensor states
+ * Sensor interface for other classes that use sensors
+ *
+ * Sensors are used to model track circuits, inter-locking lever handles,
+ * push buttons etc.; essentially anything that has a active, inactive or
+ * unknown value.
+ * Later classes specialize this interface to connect it to the physical
+ * input to the system (bus, discrete input, etc)
+ *
  * This interface only allows a user to determine whether the state of the
  * sensor is known, and if it is, its current state
  *
@@ -42,6 +49,7 @@ public:
 
 /**
  * The sensor base class for any non-trivial sensor implementation to inherit from.
+ *
  * Trivial implementations (e.g. those with an invariant state) can inherit directly
  * from Sensor_interface
  *

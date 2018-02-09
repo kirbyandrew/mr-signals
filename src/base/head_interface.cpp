@@ -21,6 +21,54 @@ Head_interface::Head_interface(const char* name)
     held_ = held_false;
 }
 
+
+/**
+ * Default wrapper logic for requesting the aspect of a given head
+ *
+ * Setting out outputs is handled in the derived class' implementation of
+ * set_aspect().  This class handles:
+ *
+ * - Skipping if the head is held
+ * - Checking that the requested aspect is different from the current aspect
+ *   before attempting to change the outputs
+ * - Only changing the head's current aspect if the outputs were successfully
+ *   set
+ * - Reporting success if the current aspect is requested, whether held or not
+ *
+ *
+ * @param aspect: The head's aspect being requested
+ * @return true: The head is set (or setting to) the requested aspect
+ *         false: The head could not change to the requested aspect
+ */
+bool Head_interface::request_aspect(const Head_aspect aspect)
+{
+    bool result = false;    // Assume unsuccessful
+
+    if(get_aspect() == aspect) {
+        // If the same aspect is requested as is currently set, irrespective
+        // of the hold state, return success
+        result = true;
+    }
+    else {
+        if (!is_held()) {
+            if (aspect != get_aspect()) {
+
+                // If the head's aspect isn't being held, and a different
+                // aspect is being requested, attempt to set the outputs
+                if (request_outputs(aspect)) {
+
+                    // If the output set to the requested aspect, update
+                    // the current aspect and return success
+                    set_aspect(aspect);
+                    result = true;
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
 void Head_interface::set_aspect(Head_aspect aspect)
 {
     aspect_ = aspect;
