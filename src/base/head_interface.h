@@ -127,6 +127,40 @@ class Fixed_red_head : public Head_interface
 
 };
 
+/**
+ * Test class for the unit tests
+ */
+class Test_head : public Head_interface
+{
+public:
+    Test_head() : Head_interface(""), aspect_(unknown),lock_(false) {}
+
+    bool request_aspect(const Head_aspect aspect) override
+    {
+        if(lock_) {
+            return false;
+        }
+        else {
+            aspect_ = aspect;
+            return true;
+        }
+    }
+
+    void loop() override {}
+
+    Head_aspect get_aspect() override
+    {
+        return aspect_;
+    }
+
+    bool request_outputs(Head_aspect) override { return false;}
+
+
+private:
+    Head_aspect aspect_;
+    bool lock_;
+};
+
 /// Get a string representation of the pass Head_aspect state
 const char* get_aspect_string(const Head_aspect);
 

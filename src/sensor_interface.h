@@ -88,6 +88,7 @@ public:
      */
     bool set_state(const bool state);
 
+    // TODO: Get rid of magic numbers!
 protected:
     char state_ : 1;            /// The current state of the sensor (0 = inactive, 1 = active)
     char indeterminate_: 1;     /// Indicates that the state of the sensor is
@@ -105,6 +106,25 @@ class Active_sensor : public Sensor_interface {
 public:
     bool get_state() override { return true; }
     bool is_indeterminate() override { return false; }
+};
+
+
+
+/**
+ * Wrapper to allow the inverted state of a sensor to be passed to to an
+ * object that uses Sensor_interface.
+ */
+class Inverted_sensor : public Sensor_interface {
+public:
+    Inverted_sensor(Sensor_interface& sensor);
+
+    bool get_state() override;
+
+    bool is_indeterminate() override;
+
+
+private:
+    Sensor_interface& sensor_;
 };
 
 

@@ -16,8 +16,39 @@
 #include "single_switch_head.h"
 #include "double_switch_head.h"
 #include "quadln_s_head.h"
+#include "masts.h"
 
 using namespace mr_signals;
+
+
+class Standard_mast_test : public ::testing::Test {
+protected:
+    void Setup(bool protected_head,unsigned int num_sensors)
+    {
+        if(!protected_head && 0 == num_sensors) {
+            test_mast_.attach_head(head_,{});
+        }
+        if(!protected_head && 1 == num_sensors) {
+            test_mast_.attach_head(head_,{&sensor_1_});
+        }
+        if(!protected_head && 2 == num_sensors) {
+            test_mast_.attach_head(head_,{&sensor_1_,&sensor_2_});
+        }
+
+    }
+    void TearDown()
+    {
+
+    }
+
+    Standard_mast test_mast_;
+    Test_head head_;
+    Test_head protected_head_;
+    Sensor_base sensor_1_;
+    Sensor_base sensor_2_;
+
+
+};
 
 
 class Quadln_s_test : public ::testing::Test {
@@ -127,6 +158,147 @@ protected:
     Sensor_base base_sensor_1_;
     Sensor_base base_sensor_2_;
 };
+
+
+TEST(Standard_mast_test,ProtectHeadAndSensor)
+{
+    Standard_mast test_mast_;
+    Test_head head_;
+    Test_head protected_head_;
+    Sensor_base sensor_1_;
+
+    test_mast_.attach_head(head_,protected_head_,{&sensor_1_});
+    EXPECT_EQ(unknown, head_.get_aspect());
+    EXPECT_EQ(unknown, protected_head_.get_aspect());
+    EXPECT_TRUE(sensor_1_.is_indeterminate());
+
+    test_mast_.loop();
+    EXPECT_EQ(unknown, head_.get_aspect());
+    EXPECT_EQ(unknown, protected_head_.get_aspect());
+    EXPECT_TRUE(sensor_1_.is_indeterminate());
+
+    protected_head_.request_aspect(red);
+    test_mast_.loop();
+    EXPECT_EQ(unknown, head_.get_aspect());
+    EXPECT_EQ(red, protected_head_.get_aspect());
+
+    sensor_1_.set_state(false);
+    test_mast_.loop();
+    EXPECT_EQ(yellow, head_.get_aspect());
+    EXPECT_EQ(red, protected_head_.get_aspect());
+
+    protected_head_.request_aspect(yellow);
+    test_mast_.loop();
+    EXPECT_EQ(green, head_.get_aspect());
+
+    protected_head_.request_aspect(green);
+    test_mast_.loop();
+    EXPECT_EQ(green, head_.get_aspect());
+
+    sensor_1_.set_state(true);
+    test_mast_.loop();
+    EXPECT_EQ(red, head_.get_aspect());
+}
+
+TEST(Standard_mast_test,Protect2SensorsOnly)
+{
+    Standard_mast test_mast_;
+    Test_head head_;
+    Sensor_base sensor_1_;
+    Sensor_base sensor_2_;
+
+    test_mast_.attach_head(head_,{&sensor_1_,&sensor_2_});
+
+    // While sensor is indeterminate, the head aspect won't change
+    EXPECT_EQ(unknown, head_.get_aspect());
+    EXPECT_TRUE(sensor_1_.is_indeterminate());
+    EXPECT_TRUE(sensor_2_.is_indeterminate());
+    test_mast_.loop();
+    EXPECT_EQ(unknown, head_.get_aspect());
+
+    sensor_1_.set_state(false);
+    sensor_2_.set_state(true);
+    test_mast_.loop();
+    EXPECT_EQ(red, head_.get_aspect());
+
+
+    sensor_1_.set_state(false);
+    sensor_2_.set_state(false);
+    test_mast_.loop();
+    EXPECT_EQ(green, head_.get_aspect());
+
+    sensor_1_.set_state(true);
+    sensor_2_.set_state(false);
+    test_mast_.loop();
+    EXPECT_EQ(red, head_.get_aspect());
+
+    sensor_1_.set_state(true);
+    sensor_2_.set_state(true);
+    test_mast_.loop();
+    EXPECT_EQ(red, head_.get_aspect());
+
+}
+
+
+TEST(Standard_mast_test,Protect1SensorsOnly)
+{
+    Standard_mast test_mast_;
+    Test_head head_;
+    Sensor_base sensor_1_;
+
+    test_mast_.attach_head(head_,{&sensor_1_});
+
+    // While sensor is indeterminate, the head aspect won't change
+    EXPECT_EQ(unknown, head_.get_aspect());
+    EXPECT_TRUE(sensor_1_.is_indeterminate());
+    test_mast_.loop();
+    EXPECT_EQ(unknown, head_.get_aspect());
+
+    sensor_1_.set_state(false);
+    test_mast_.loop();
+    EXPECT_EQ(green, head_.get_aspect());
+
+
+    sensor_1_.set_state(true);
+    test_mast_.loop();
+    EXPECT_EQ(red, head_.get_aspect());
+}
+
+
+TEST(Standard_mast_test,NoProtection)
+{
+    Standard_mast test_mast_;
+    Test_head head_;
+
+    test_mast_.attach_head(head_,{});
+
+    // With just a head attached, it should just go and stay green
+    EXPECT_EQ(unknown, head_.get_aspect());
+    test_mast_.loop();
+    EXPECT_EQ(green, head_.get_aspect());
+
+    test_mast_.loop();
+    EXPECT_EQ(green, head_.get_aspect());
+
+}
+/*
+        class  : public ::testing::Test {
+        protected:
+            void Setup(bool protected_head,unsigned int num_sensors)
+            {
+                if(!protected_head && 0 == num_sensors) {
+                    test_mast_.attach_head(head_,nullptr);
+                }
+                if(!protected_head && 1 == num_sensors) {
+                    test_mast_.attach_head(head,{sensor_1});
+                }
+                if(!protected_head && 2 == num_sensors) {
+                    test_mast_.attach_head(head,{sensor_1,sensor_2});
+                }
+
+)
+*/
+
 
 TEST_F(Quadln_s_test,LockedSwitches)
 {
@@ -509,6 +681,29 @@ TEST_F (Test_switch_test, TestSwitchBehavior){
 
     test_switch_1_.loop();
     EXPECT_EQ(1,test_switch_1_.get_loop_cnt());
+}
+
+TEST(InvertedSensor,Inversion)
+{
+    Sensor_base sensor_;
+    Inverted_sensor inverted_sensor_(sensor_);
+
+    EXPECT_TRUE(sensor_.is_indeterminate());
+    EXPECT_TRUE(inverted_sensor_.is_indeterminate());
+
+    EXPECT_FALSE(inverted_sensor_.get_state());
+
+    sensor_.set_state(true);
+    EXPECT_FALSE(sensor_.is_indeterminate());
+    EXPECT_FALSE(inverted_sensor_.is_indeterminate());
+    EXPECT_TRUE(sensor_.get_state());
+    EXPECT_FALSE(inverted_sensor_.get_state());
+
+    sensor_.set_state(false);
+    EXPECT_FALSE(sensor_.is_indeterminate());
+    EXPECT_FALSE(inverted_sensor_.is_indeterminate());
+    EXPECT_FALSE(sensor_.get_state());
+    EXPECT_TRUE(inverted_sensor_.get_state());
 }
 
 

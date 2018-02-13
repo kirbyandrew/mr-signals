@@ -43,3 +43,32 @@ bool Sensor_base::set_state(const bool state)
 
 
 
+Inverted_sensor::Inverted_sensor(Sensor_interface& sensor) :
+        sensor_(sensor)
+{
+}
+
+/**
+ * Returns the inverted state of the sensor
+ *
+ * While get_state() should not be called if a sensor is indeterminate,
+ * the return is forced to false to protect against that case
+ * @return
+ */bool Inverted_sensor::get_state()
+{
+    if(sensor_.is_indeterminate()) {
+        return false;
+    }
+    else {
+        return !sensor_.get_state();
+    }
+}
+
+bool Inverted_sensor::is_indeterminate()
+{
+    return sensor_.is_indeterminate();
+}
+
+
+
+
