@@ -27,7 +27,7 @@ int freeRam () {
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
-
+// TODO: Use an initializer list to add a bunch of ints to check how efficient the re-allocation is
 void setup() {
   // put your setup code here, to run once:
  // test_switch.loop();

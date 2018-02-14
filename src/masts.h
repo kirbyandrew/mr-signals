@@ -15,37 +15,23 @@
 
 namespace mr_signals {
 
-class Standard_mast : public Mast_interface
+class Simple_rbg_logic : public Logic_interface
 {
 public:
-    Standard_mast();
-
-    virtual void attach_head(Head_interface& head,
+    Simple_rbg_logic(Head_interface& head,
             Head_interface& protected_head,
-            std::initializer_list<Sensor_interface *> const & protected_sensors)
-                    override;
+            std::initializer_list<Sensor_interface *> const & protected_sensors);
 
-
-    void attach_head(Head_interface& head,
-            std::initializer_list<Sensor_interface *> const & protected_sensors)
-                    override;
-
-
+    Simple_rbg_logic(Head_interface& head,
+            std::initializer_list<Sensor_interface *> const & protected_sensors);
 
     void loop() override;
 
 protected:
 
-
-    struct Mast_head {
-        Head_interface& head;               // Reference as there must be a head
-        Head_interface* protected_head;     // Pointer as there may not be a protected head. nullptr used when not present
-        std::vector<Sensor_interface *> protected_sensors_;
-    };
-
-    bool process_head(Mast_head& head);
-
-    std::vector<Mast_head> heads_;
+    Head_interface& head_;               // Reference as there must be a head
+    Head_interface* protected_head_;     // Pointer as there may not be a protected head. nullptr used when not present
+    std::vector<Sensor_interface *> protected_sensors_;
 };
 
 /*

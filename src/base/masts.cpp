@@ -29,23 +29,21 @@ using namespace mr_signals;
 // - cost of passing initializer list
 // comparison of individual classes for 'head_logic' rather than masts that collect it
 
-Standard_mast::Standard_mast() {}
 
-// Attach a head and protected sensor list only
-void Standard_mast::attach_head(Head_interface& head,
-            std::initializer_list<Sensor_interface *> const & protected_sensors)
-{
-    heads_.push_back(Mast_head { head, nullptr, protected_sensors });
-}
-
-// Attach a head and protected sensor list only
-void Standard_mast::attach_head(Head_interface& head,
+Simple_rbg_logic::Simple_rbg_logic(Head_interface& head,
         Head_interface& protected_head,
-        std::initializer_list<Sensor_interface *> const & protected_sensors)
+        std::initializer_list<Sensor_interface *> const & protected_sensors) :
+        head_(head), protected_head_(&protected_head), protected_sensors_(
+                protected_sensors)
 {
-    heads_.push_back(Mast_head { head, &protected_head, protected_sensors });
 }
 
+Simple_rbg_logic::Simple_rbg_logic(Head_interface& head,
+        std::initializer_list<Sensor_interface *> const & protected_sensors) :
+        head_(head), protected_head_(nullptr), protected_sensors_(
+                protected_sensors)
+{
+}
 
 /**
  * Aspect logic for a 3 aspect head that protects sensors and may protect
@@ -62,24 +60,22 @@ void Standard_mast::attach_head(Head_interface& head,
  * @param head
  * @return
  */
-bool Standard_mast::process_head(Mast_head& head)
+void Simple_rbg_logic::loop()
 {
-    bool changed = false;
-
-    head.head.loop();
+    head_.loop();
 
     // Check that the state of all protected sensors are known
-    if (std::none_of(head.protected_sensors_.begin(),
-            head.protected_sensors_.end(),
-            [](Sensor_interface* sensor) {return sensor->is_indeterminate();})) {
+    if (std::none_of(protected_sensors_.begin(),
+                    protected_sensors_.end(),
+                    [](Sensor_interface* sensor) {return sensor->is_indeterminate();})) {
 
         // No sensors are indeterminate, process the head's setting
         Head_aspect aspect = unknown;
 
         // First check the protected sensors
-        if (std::any_of(head.protected_sensors_.begin(),
-                head.protected_sensors_.end(),
-                [](Sensor_interface* sensor) {return sensor->get_state();})) {
+        if (std::any_of(protected_sensors_.begin(),
+                        protected_sensors_.end(),
+                        [](Sensor_interface* sensor) {return sensor->get_state();})) {
 
             // A protected block is occupied, set the head red
             aspect = red;
@@ -88,15 +84,15 @@ bool Standard_mast::process_head(Mast_head& head)
             // Since the protected blocks are clear, check the protected head
             // and determine a green or yellow aspect
 
-            bool protectedHeadStop = false;
+            bool protected_head_stop = false;
 
-             if (nullptr != head.protected_head) {
-                 if (red == head.protected_head->get_aspect()) {
-                     protectedHeadStop = true;
-                 }
-             }
+            if (nullptr != protected_head_) {
+                if (red == protected_head_->get_aspect()) {
+                    protected_head_stop = true;
+                }
+            }
 
-            if (protectedHeadStop) {
+            if (protected_head_stop) {
                 // Protected signal is at stop, so set this head to Caution/yellow
                 aspect = yellow;
             } else {
@@ -108,23 +104,12 @@ bool Standard_mast::process_head(Mast_head& head)
 
         // If the new aspect determined for this head differs from its current
         // value, request that the head change
-        if (aspect != head.head.get_aspect()) {
-            if ((changed = head.head.request_aspect(aspect)) == true) {
-//                Debug << F("Mast ") << name_.c_str() << head.head->GetName() << F(" changed to ") << GetAspectString(head.head -> GetAspect()) << F("\n");
+        if (aspect != head_.get_aspect()) {
+            if (head_.request_aspect(aspect) == true) {
+    //                Debug << F("Mast ") << name_.c_str() << head.head->GetName() << F(" changed to ") << GetAspectString(head.head -> GetAspect()) << F("\n");
             }
         }
+
     }
-
-    return changed;
-
 }
 
-
-void Standard_mast::loop()
-{
-    // Evaluate each head attached to this mast
-    for (Mast_head& head : heads_) {
-        process_head(head);
-    }
-
-}

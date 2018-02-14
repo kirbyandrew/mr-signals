@@ -17,21 +17,11 @@
 namespace mr_signals {
 
 
-class Mast_interface {
+class Logic_interface {
 public:
-
-    virtual void attach_head(Head_interface& head,
-            Head_interface& protected_head,
-            std::initializer_list<Sensor_interface *> const & protected_sensors) = 0;
-
-    virtual void attach_head(Head_interface& head,
-            std::initializer_list<Sensor_interface *> const & protected_sensors) = 0;
-
     virtual void loop() = 0;
-//    virtual void PrintAspects() = 0;
-//    virtual void debugPrint() = 0;
 
-    virtual ~Mast_interface() = default;
+    virtual ~Logic_interface () = default;
 };
 
 

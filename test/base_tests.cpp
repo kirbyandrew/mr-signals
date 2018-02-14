@@ -21,35 +21,6 @@
 using namespace mr_signals;
 
 
-class Standard_mast_test : public ::testing::Test {
-protected:
-    void Setup(bool protected_head,unsigned int num_sensors)
-    {
-        if(!protected_head && 0 == num_sensors) {
-            test_mast_.attach_head(head_,{});
-        }
-        if(!protected_head && 1 == num_sensors) {
-            test_mast_.attach_head(head_,{&sensor_1_});
-        }
-        if(!protected_head && 2 == num_sensors) {
-            test_mast_.attach_head(head_,{&sensor_1_,&sensor_2_});
-        }
-
-    }
-    void TearDown()
-    {
-
-    }
-
-    Standard_mast test_mast_;
-    Test_head head_;
-    Test_head protected_head_;
-    Sensor_base sensor_1_;
-    Sensor_base sensor_2_;
-
-
-};
-
 
 class Quadln_s_test : public ::testing::Test {
 
@@ -159,15 +130,15 @@ protected:
     Sensor_base base_sensor_2_;
 };
 
-
 TEST(Standard_mast_test,ProtectHeadAndSensor)
 {
-    Standard_mast test_mast_;
     Test_head head_;
     Test_head protected_head_;
     Sensor_base sensor_1_;
 
-    test_mast_.attach_head(head_,protected_head_,{&sensor_1_});
+    Simple_rbg_logic test_mast_(head_,protected_head_,{&sensor_1_});
+
+
     EXPECT_EQ(unknown, head_.get_aspect());
     EXPECT_EQ(unknown, protected_head_.get_aspect());
     EXPECT_TRUE(sensor_1_.is_indeterminate());
@@ -202,12 +173,12 @@ TEST(Standard_mast_test,ProtectHeadAndSensor)
 
 TEST(Standard_mast_test,Protect2SensorsOnly)
 {
-    Standard_mast test_mast_;
     Test_head head_;
     Sensor_base sensor_1_;
     Sensor_base sensor_2_;
 
-    test_mast_.attach_head(head_,{&sensor_1_,&sensor_2_});
+    Simple_rbg_logic test_mast_(head_,{&sensor_1_,&sensor_2_});
+
 
     // While sensor is indeterminate, the head aspect won't change
     EXPECT_EQ(unknown, head_.get_aspect());
@@ -242,11 +213,11 @@ TEST(Standard_mast_test,Protect2SensorsOnly)
 
 TEST(Standard_mast_test,Protect1SensorsOnly)
 {
-    Standard_mast test_mast_;
     Test_head head_;
     Sensor_base sensor_1_;
 
-    test_mast_.attach_head(head_,{&sensor_1_});
+    Simple_rbg_logic test_mast_(head_,{&sensor_1_});
+
 
     // While sensor is indeterminate, the head aspect won't change
     EXPECT_EQ(unknown, head_.get_aspect());
@@ -267,10 +238,8 @@ TEST(Standard_mast_test,Protect1SensorsOnly)
 
 TEST(Standard_mast_test,NoProtection)
 {
-    Standard_mast test_mast_;
     Test_head head_;
-
-    test_mast_.attach_head(head_,{});
+    Simple_rbg_logic test_mast_(head_,{});
 
     // With just a head attached, it should just go and stay green
     EXPECT_EQ(unknown, head_.get_aspect());
@@ -281,23 +250,6 @@ TEST(Standard_mast_test,NoProtection)
     EXPECT_EQ(green, head_.get_aspect());
 
 }
-/*
-        class  : public ::testing::Test {
-        protected:
-            void Setup(bool protected_head,unsigned int num_sensors)
-            {
-                if(!protected_head && 0 == num_sensors) {
-                    test_mast_.attach_head(head_,nullptr);
-                }
-                if(!protected_head && 1 == num_sensors) {
-                    test_mast_.attach_head(head,{sensor_1});
-                }
-                if(!protected_head && 2 == num_sensors) {
-                    test_mast_.attach_head(head,{sensor_1,sensor_2});
-                }
-
-)
-*/
 
 
 TEST_F(Quadln_s_test,LockedSwitches)
