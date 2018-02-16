@@ -8,22 +8,24 @@
 #ifndef SWITCH_INTERFACE_H_
 #define SWITCH_INTERFACE_H_
 
+#include <stdint.h>
 
 namespace mr_signals {
 
 /// Bus (DCC, loconet etc) switch states
-enum Switch_direction {
-    switch_closed,      /// The switch is in the closed position
-    switch_thrown,      /// The switch is in the open position
-    switch_unknown      /// The state of the switch is unknown
+enum class Switch_direction : uint8_t {
+    closed,      /// The switch is in the closed position
+    thrown,      /// The switch is in the open position
+    unknown      /// The state of the switch is unknown
 };
 
 /**
  * Abstract interface to address DCC (or similar) switches to be used
  * by classes that manipulate the state of physical switches.
  *
- * Switches start with an unknown state, switches can be set to
- * switch_closed or switch_thrown.
+ * The state of a switch can be requested to be thrown or closed.
+ * A switch state is requested rather than set to allow for the
+ * detection of an error (and retry of) in setting a physical switch's state
  *
  * Concrete implementations that control physical switches are
  * recommended to initialize the switch state to
@@ -31,7 +33,9 @@ enum Switch_direction {
  * simplify the logic to determine if a state change is being requested
  * before sending out a command on the bus.
  *
- */class Switch_interface {
+ */
+//TODO: Should this include the switch direction state and setter/getters?
+class Switch_interface {
 public:
     virtual bool request_direction(const Switch_direction)=0;
     virtual void loop()=0;
@@ -46,7 +50,7 @@ public:
 
 
     Test_switch(int num = -1) :
-        direction_(switch_unknown), num_(num), loop_cnt_(0), lock_(false)
+        direction_(Switch_direction::unknown), num_(num), loop_cnt_(0), lock_(false)
     {
     }
 

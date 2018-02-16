@@ -32,18 +32,18 @@ bool Quadln_s_head::request_outputs(const Head_aspect aspect)
 
     switch (aspect) {
     case Head_aspect::green:
-        if (true == switch_1_.request_direction(switch_thrown)) {
-            result = midpoint_switch_.request_direction(switch_closed);
+        if (true == switch_1_.request_direction(Switch_direction::thrown)) {
+            result = midpoint_switch_.request_direction(Switch_direction::closed);
         }
         break;
 
     case Head_aspect::yellow:
-        result = midpoint_switch_.request_direction(switch_thrown);
+        result = midpoint_switch_.request_direction(Switch_direction::thrown);
         break;
 
     case Head_aspect::red:
-        if (true == switch_1_.request_direction(switch_closed)) {
-            result = midpoint_switch_.request_direction(switch_closed);
+        if (true == switch_1_.request_direction(Switch_direction::closed)) {
+            result = midpoint_switch_.request_direction(Switch_direction::closed);
         }
         break;
 

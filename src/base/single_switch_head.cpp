@@ -25,12 +25,12 @@ bool Single_switch_head::request_outputs(const Head_aspect aspect)
     switch (aspect) {
     case Head_aspect::dark:          // Close (turn off) the switch for dark & red
     case Head_aspect::red:
-        result = switch_1_.request_direction(switch_closed);
+        result = switch_1_.request_direction(Switch_direction::closed);
         break;
 
     case Head_aspect::yellow:        // Throw (turn on) the switch for other valid aspects
     case Head_aspect::green:
-        result = switch_1_.request_direction(switch_thrown);
+        result = switch_1_.request_direction(Switch_direction::thrown);
         break;
 
     case Head_aspect::unknown:       // Take no action if the state is invalid or unknown
@@ -68,6 +68,8 @@ Single_switch_sensor_head::Single_switch_sensor_head(const char *name,
  * @param aspect
  * @return true if the state of the head changes
  */
+// TODO: Why can't this use case be handled with the button being
+// an inverted protected sensor
 bool Single_switch_sensor_head::request_aspect(const Head_aspect aspect)
 {
 
