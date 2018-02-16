@@ -23,17 +23,17 @@ bool Single_switch_head::request_outputs(const Head_aspect aspect)
     bool result = false;
 
     switch (aspect) {
-    case dark:          // Close (turn off) the switch for dark & red
-    case red:
+    case Head_aspect::dark:          // Close (turn off) the switch for dark & red
+    case Head_aspect::red:
         result = switch_1_.request_direction(switch_closed);
         break;
 
-    case yellow:        // Throw (turn on) the switch for other valid aspects
-    case green:
+    case Head_aspect::yellow:        // Throw (turn on) the switch for other valid aspects
+    case Head_aspect::green:
         result = switch_1_.request_direction(switch_thrown);
         break;
 
-    case unknown:       // Take no action if the state is invalid or unknown
+    case Head_aspect::unknown:       // Take no action if the state is invalid or unknown
     default:
         break;
 
@@ -71,8 +71,8 @@ Single_switch_sensor_head::Single_switch_sensor_head(const char *name,
 bool Single_switch_sensor_head::request_aspect(const Head_aspect aspect)
 {
 
-    if( (dark == aspect) ||
-        (red  == aspect) ||
+    if( (Head_aspect::dark == aspect) ||
+        (Head_aspect::red  == aspect) ||
         (!sensor_.is_indeterminate() && true == sensor_.get_state()))
     {
         return Single_switch_head::request_aspect(aspect);

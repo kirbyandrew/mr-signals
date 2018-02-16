@@ -22,31 +22,31 @@ bool Double_switch_head::request_outputs(const Head_aspect aspect) {
     bool result = false;
 
     switch (aspect) {
-    case dark:
+    case Head_aspect::dark:
         if (true == switch_1_.request_direction(switch_closed)) {
             result = switch_2_.request_direction(switch_closed);
         }
         break;
 
-    case green:
+    case Head_aspect::green:
         if (true == switch_1_.request_direction(switch_thrown)) {
             result = switch_2_.request_direction(switch_closed);
         }
         break;
 
-    case yellow:
+    case Head_aspect::yellow:
         if (true == switch_1_.request_direction(switch_thrown)) {
             result = switch_2_.request_direction(switch_thrown);
         }
         break;
 
-    case red:
+    case Head_aspect::red:
         if (true == switch_1_.request_direction(switch_closed)) {
             result = switch_2_.request_direction(switch_thrown);
         }
         break;
 
-    case unknown:
+    case Head_aspect::unknown:
     default:
         // result = false;
         break;

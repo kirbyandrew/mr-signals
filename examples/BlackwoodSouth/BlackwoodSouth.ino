@@ -16,11 +16,11 @@ Test_switch sw1,sw2;
 Single_switch_head ss_head1("",sw1);
 Single_switch_head ss_head2("",sw2);
 Single_switch_head ss_head3("",sw2);
-
+/*
 Double_switch_head ds_head1("",sw1,sw2);
 Double_switch_head ds_head2("",sw1,sw2);
 Double_switch_head ds_head3("",sw1,sw2);
-
+*/
 int freeRam () {
   extern int __heap_start, *__brkval;
   int v;
@@ -31,6 +31,7 @@ int freeRam () {
 void setup() {
   // put your setup code here, to run once:
  // test_switch.loop();
+
 
   Serial.begin(9600);
 //  Serial.begin(57600);

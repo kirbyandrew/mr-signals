@@ -8,10 +8,14 @@
 #ifndef SRC_BASE_HEAD_INTERFACE_H_
 #define SRC_BASE_HEAD_INTERFACE_H_
 
+#include <stdint.h>
+
 namespace mr_signals {
 
-
-enum Head_aspect
+// Supported aspects for a single signal head
+// Constrain to single byte to save space
+// Using uint8_t would be better, but there  arduino doesn't appear to like #include <cstdint>
+enum class Head_aspect : uint8_t
 {
     unknown,
     dark,
@@ -92,11 +96,11 @@ private:
     #define head_name_len 5
     char name_[head_name_len+1];    /// Name of the head.  Char array more RAM efficient than std::string
 
-    char aspect_ : 4;               /// Lowest size internal representation of the Head_aspect enum
+    uint8_t aspect_ : 4;               /// Lowest size internal representation of the Head_aspect enum
 
     #define held_true 1
     #define held_false 0
-    char held_ : 1;                 /// Aspect of the head is being held (locked)
+    uint8_t held_ : 1;                 /// Aspect of the head is being held (locked)
 
 };
 
@@ -118,7 +122,7 @@ class Fixed_red_head : public Head_interface
     // Does nothing
     bool request_aspect(const Head_aspect aspect) override
     {
-        if (aspect) {}
+        if (Head_aspect::unknown == aspect) {}
         return false;
     }
     void loop() override
@@ -133,7 +137,7 @@ class Fixed_red_head : public Head_interface
 class Test_head : public Head_interface
 {
 public:
-    Test_head() : Head_interface(""), aspect_(unknown),lock_(false) {}
+    Test_head() : Head_interface(""), aspect_(Head_aspect::unknown),lock_(false) {}
 
     bool request_aspect(const Head_aspect aspect) override
     {

@@ -70,7 +70,7 @@ void Simple_rbg_logic::loop()
                     [](Sensor_interface* sensor) {return sensor->is_indeterminate();})) {
 
         // No sensors are indeterminate, process the head's setting
-        Head_aspect aspect = unknown;
+        Head_aspect aspect = Head_aspect::unknown;
 
         // First check the protected sensors
         if (std::any_of(protected_sensors_.begin(),
@@ -78,7 +78,7 @@ void Simple_rbg_logic::loop()
                         [](Sensor_interface* sensor) {return sensor->get_state();})) {
 
             // A protected block is occupied, set the head red
-            aspect = red;
+            aspect = Head_aspect::red;
         }
         else {
             // Since the protected blocks are clear, check the protected head
@@ -87,18 +87,18 @@ void Simple_rbg_logic::loop()
             bool protected_head_stop = false;
 
             if (nullptr != protected_head_) {
-                if (red == protected_head_->get_aspect()) {
+                if (Head_aspect::red == protected_head_->get_aspect()) {
                     protected_head_stop = true;
                 }
             }
 
             if (protected_head_stop) {
                 // Protected signal is at stop, so set this head to Caution/yellow
-                aspect = yellow;
+                aspect = Head_aspect::yellow;
             } else {
                 // Both the protected blocks are clear and the protected signal is
                 // not at stop (or doesn't exist); set a Proceed indication
-                aspect = green;
+                aspect = Head_aspect::green;
             }
         }
 

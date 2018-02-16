@@ -31,24 +31,24 @@ bool Quadln_s_head::request_outputs(const Head_aspect aspect)
     bool result = false;
 
     switch (aspect) {
-    case green:
+    case Head_aspect::green:
         if (true == switch_1_.request_direction(switch_thrown)) {
             result = midpoint_switch_.request_direction(switch_closed);
         }
         break;
 
-    case yellow:
+    case Head_aspect::yellow:
         result = midpoint_switch_.request_direction(switch_thrown);
         break;
 
-    case red:
+    case Head_aspect::red:
         if (true == switch_1_.request_direction(switch_closed)) {
             result = midpoint_switch_.request_direction(switch_closed);
         }
         break;
 
-    case unknown:
-    case dark:      // Not supported by QuadLN_S
+    case Head_aspect::unknown:
+    case Head_aspect::dark:      // Not supported by QuadLN_S
     default:
         // result = false;
         break;

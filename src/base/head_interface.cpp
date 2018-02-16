@@ -17,7 +17,7 @@ Head_interface::Head_interface(const char* name)
     strncpy(name_, name, head_name_len);
     name_[head_name_len] = '\0';
 
-    aspect_ = unknown;
+    set_aspect(Head_aspect::unknown);
     held_ = held_false;
 }
 
@@ -71,7 +71,7 @@ bool Head_interface::request_aspect(const Head_aspect aspect)
 
 void Head_interface::set_aspect(Head_aspect aspect)
 {
-    aspect_ = aspect;
+    aspect_ = (uint8_t) aspect;
 }
 
 Head_aspect Head_interface::get_aspect()
@@ -86,7 +86,7 @@ const char* Head_interface::get_name()
 
 void Head_interface::set_held(const bool held)
 {
-    held_ = (aspect_ != unknown && true==held) ? held_true : held_false;
+    held_ = (aspect_ != (uint8_t) Head_aspect::unknown && true==held) ? held_true : held_false;
 }
 
 bool Head_interface::is_held()
@@ -107,15 +107,15 @@ bool Head_interface::is_held()
 const char* mr_signals::get_aspect_string(const Head_aspect aspect)
 {
     switch(aspect) {
-    case unknown:
+    case Head_aspect::unknown:
         return "u";
-    case dark:
+    case Head_aspect::dark:
         return "d";
-    case red:
+    case Head_aspect::red:
         return "r";
-    case yellow:
+    case Head_aspect::yellow:
         return "y";
-    case green:
+    case Head_aspect::green:
         return "g";
     default:
         break;      //fall through below to always return
