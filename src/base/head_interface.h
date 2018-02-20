@@ -63,10 +63,10 @@ public:
     virtual const char* get_name();
 
     /// 'Lock' the current aspect of the head. Ignored if the state is unknown
-    void set_held(const bool);
+    virtual void set_held(const bool);
 
     /// Indicate whether the head's aspect is currently locked
-    bool is_held();
+    virtual bool is_held();
 
 
     Head_interface(const char* name);
@@ -93,13 +93,16 @@ protected:
     virtual bool request_outputs(Head_aspect aspect) = 0;
 
 private:
-    #define head_name_len 5
-    char name_[head_name_len+1];    /// Name of the head.  Char array more RAM efficient than std::string
+    static const int head_name_len = 5;
+    char name_[head_name_len+1];        /// Name of the head.  Char array more RAM efficient than std::string
 
     uint8_t aspect_ : 4;               /// Lowest size internal representation of the Head_aspect enum
 
-    #define held_true 1
-    #define held_false 0
+    enum
+    {
+        held_false=0,
+        held_true
+    };
     uint8_t held_ : 1;                 /// Aspect of the head is being held (locked)
 
 };
@@ -137,32 +140,25 @@ class Fixed_red_head : public Head_interface
 class Test_head : public Head_interface
 {
 public:
-    Test_head() : Head_interface(""), aspect_(Head_aspect::unknown),lock_(false) {}
+    Test_head() : Head_interface("") {}
 
     bool request_aspect(const Head_aspect aspect) override
     {
-        if(lock_) {
+        if(is_held()) {
             return false;
         }
         else {
-            aspect_ = aspect;
+            set_aspect(aspect);
             return true;
         }
     }
 
     void loop() override {}
 
-    Head_aspect get_aspect() override
-    {
-        return aspect_;
-    }
 
     bool request_outputs(Head_aspect) override { return false;}
 
 
-private:
-    Head_aspect aspect_;
-    bool lock_;
 };
 
 /// Get a string representation of the pass Head_aspect state

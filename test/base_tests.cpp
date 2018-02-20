@@ -8,6 +8,7 @@
  */
 
 
+#include <ryg_logic.h>
 #include "gtest/gtest.h"
 
 #include "sensor_interface.h"
@@ -16,7 +17,7 @@
 #include "single_switch_head.h"
 #include "double_switch_head.h"
 #include "quadln_s_head.h"
-#include "masts.h"
+#include "sensor_interlocked_head.h"
 
 using namespace mr_signals;
 
@@ -60,7 +61,7 @@ protected:
 };
 
 
-
+/*
 class Single_switch_sensor_test : public ::testing::Test {
 
 protected:
@@ -78,7 +79,7 @@ protected:
     Test_switch switch_1_;
     Sensor_base sensor_1_;
 };
-
+*/
 class Single_switch_test : public ::testing::Test {
 
 protected:
@@ -130,13 +131,258 @@ protected:
     Sensor_base base_sensor_2_;
 };
 
-TEST(Standard_mast_test,ProtectHeadAndSensor)
+
+TEST(LeverWithPushKey,BasicStates)
+{
+//    Test_sensor lever_(false);
+//    Test_sensor push_key_(false);
+    Test_sensor lever_;
+    Test_sensor push_key_;
+    Lever_with_pushkey interlocked_lever_(lever_,push_key_);
+
+    EXPECT_FALSE(interlocked_lever_.get_state());
+
+    EXPECT_TRUE(interlocked_lever_.is_indeterminate());
+    lever_.set_state(false);
+    EXPECT_TRUE(interlocked_lever_.is_indeterminate());
+    push_key_.set_state(false);
+    EXPECT_FALSE(interlocked_lever_.is_indeterminate());
+
+
+    lever_.set_state(true);
+    EXPECT_FALSE(interlocked_lever_.get_state());
+    EXPECT_FALSE(interlocked_lever_.get_state());
+
+    push_key_.set_state(true);
+    EXPECT_FALSE(interlocked_lever_.get_state());
+    EXPECT_FALSE(interlocked_lever_.get_state());
+
+    lever_.set_state(false);
+    EXPECT_FALSE(interlocked_lever_.get_state());
+    EXPECT_FALSE(interlocked_lever_.get_state());
+
+    lever_.set_state(true);
+    EXPECT_TRUE(interlocked_lever_.get_state());
+    EXPECT_TRUE(interlocked_lever_.get_state());
+
+}
+
+TEST(Interlocked_ryg_test,CallOnButton)
+{
+    Test_sensor lever_(true);
+    Test_sensor push_key_(false);
+    Test_sensor sensor_1_(false);
+    Test_switch test_switch_1_;
+
+// Option1: Needs the head set to ::red and held to work
+//  Single_switch_sensor_head head_("",test_switch_1_,push_key_);
+//    Interlocked_ryg_logic test_logic_(head_, lever_, { &sensor_1_ });
+    //  head_.request_aspect(Head_aspect::red);
+    //  head_.set_held(true);
+
+
+// Option2: Use Sensor_interlocked_head
+//    Test_head head_;
+//    Sensor_interlocked_head logical_head_(head_,push_key_);
+//    Interlocked_ryg_logic test_logic_(logical_head_,lever_,{ &sensor_1_ });
+
+// Option3 : Use Lever_with_pushkey
+    Test_head head_;
+    Lever_with_pushkey interlocked_lever_(lever_,push_key_);
+    Interlocked_ryg_logic test_logic_(head_,interlocked_lever_,{ &sensor_1_ });
+
+
+
+    // If the lever is reversed but the pushkey isn't pressed,
+    // the head should remain red
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    // Pushing the key with the lever already reversed will not
+    // clear the head (already locked to red)
+    push_key_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red, head_.get_aspect());
+
+    // Set the lever to normal
+    lever_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red, head_.get_aspect());
+
+
+    // And then reverse it again with the push key pressed
+    // and the head should go green
+    lever_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green, head_.get_aspect());
+
+    // The head will stay green if the pushkey is then released
+    push_key_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green, head_.get_aspect());
+
+
+    lever_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red, head_.get_aspect());
+
+    lever_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red, head_.get_aspect());
+
+    push_key_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red, head_.get_aspect());
+
+}
+
+
+TEST(Interlocked_ryg_test,AutomatedLever)
+{
+    Test_head head_;
+    Test_head protected_head_;
+    Test_sensor sensor_1_(false);
+    Test_sensor automated_lever_(false);
+    Test_sensor lever_(false);
+
+    Interlocked_ryg_logic test_logic_(head_, protected_head_, lever_,
+            automated_lever_, { &sensor_1_ });
+
+    // If the lever isn't reversed, the head should go red
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    // Reverse the lever, should go green
+    lever_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+
+    // If the sensor goes active, the head will go and stay red
+    // even if the sensor goes inactive
+    sensor_1_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    sensor_1_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    // Even when the automated lever is reversed, the head will stay
+    // locked on red
+    automated_lever_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    // Set lever to normal and then back to reversed, and the head
+    // should return to green
+    lever_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    lever_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+
+    // Now if the sensor goes active, the head will go red,
+    // but once the sensor goes inactive, it will go back to
+    // green due to the automated lever being reversed
+    sensor_1_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    sensor_1_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+
+    // Check that the protected head logic works with the
+    // auotmated lever reversed
+    protected_head_.request_aspect(Head_aspect::red);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::yellow,head_.get_aspect());
+
+    protected_head_.request_aspect(Head_aspect::yellow);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+
+    protected_head_.request_aspect(Head_aspect::green);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+
+
+}
+
+
+
+TEST(Interlocked_ryg_test,BasicInterlocking)
+{
+    Test_head head_;
+    Test_head protected_head_;
+    Sensor_base sensor_1_;
+    Sensor_base lever_;
+
+    Interlocked_ryg_logic test_logic_(head_,protected_head_,lever_,{&sensor_1_});
+
+
+    protected_head_.request_aspect(Head_aspect::green);
+    sensor_1_.set_state(false);
+
+    test_logic_.loop();
+    // Lever is indeterminate, head state will not change
+    EXPECT_EQ(Head_aspect::unknown,head_.get_aspect());
+
+    // once the lever state is known, the head will go red
+    lever_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    // lever reversed, no blocking elements, should go green
+    lever_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+
+    // Check that the expected protected head logic works
+    protected_head_.request_aspect(Head_aspect::red);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::yellow,head_.get_aspect());
+
+    protected_head_.request_aspect(Head_aspect::yellow);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+
+    protected_head_.request_aspect(Head_aspect::green);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+
+
+    // Protected sensor active, drops head to red
+    sensor_1_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    // Once set to red, the head should stay there even if the sensor goes inactive
+    sensor_1_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    // Should require the lever to be set to normal and then reversed
+    // again (with clear conditions) for the head to change from red
+    lever_.set_state(false);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::red,head_.get_aspect());
+
+    lever_.set_state(true);
+    test_logic_.loop();
+    EXPECT_EQ(Head_aspect::green,head_.get_aspect());
+}
+
+
+TEST(Simple_ryg_test,ProtectHeadAndSensor)
 {
     Test_head head_;
     Test_head protected_head_;
     Sensor_base sensor_1_;
 
-    Simple_rbg_logic test_mast_(head_,protected_head_,{&sensor_1_});
+    Simple_ryg_logic test_mast_(head_,protected_head_,{&sensor_1_});
 
 
     EXPECT_EQ(Head_aspect::unknown, head_.get_aspect());
@@ -171,13 +417,13 @@ TEST(Standard_mast_test,ProtectHeadAndSensor)
     EXPECT_EQ(Head_aspect::red, head_.get_aspect());
 }
 
-TEST(Standard_mast_test,Protect2SensorsOnly)
+TEST(Simple_ryg_test,Protect2SensorsOnly)
 {
     Test_head head_;
     Sensor_base sensor_1_;
     Sensor_base sensor_2_;
 
-    Simple_rbg_logic test_mast_(head_,{&sensor_1_,&sensor_2_});
+    Simple_ryg_logic test_mast_(head_,{&sensor_1_,&sensor_2_});
 
 
     // While sensor is indeterminate, the head aspect won't change
@@ -211,12 +457,12 @@ TEST(Standard_mast_test,Protect2SensorsOnly)
 }
 
 
-TEST(Standard_mast_test,Protect1SensorsOnly)
+TEST(Simple_ryg_test,Protect1SensorsOnly)
 {
     Test_head head_;
     Sensor_base sensor_1_;
 
-    Simple_rbg_logic test_mast_(head_,{&sensor_1_});
+    Simple_ryg_logic test_mast_(head_,{&sensor_1_});
 
 
     // While sensor is indeterminate, the head aspect won't change
@@ -236,10 +482,10 @@ TEST(Standard_mast_test,Protect1SensorsOnly)
 }
 
 
-TEST(Standard_mast_test,NoProtection)
+TEST(Simple_ryg_test,NoProtection)
 {
     Test_head head_;
-    Simple_rbg_logic test_mast_(head_,{});
+    Simple_ryg_logic test_mast_(head_,{});
 
     // With just a head attached, it should just go and stay Head_aspect::green
     EXPECT_EQ(Head_aspect::unknown, head_.get_aspect());
@@ -470,7 +716,7 @@ TEST_F(Double_switch_test,HeldStates)
     EXPECT_FALSE(head_->is_held());
 
 }
-
+/*
 TEST_F(Single_switch_sensor_test,SwitchStates)
 {
     SetUp();
@@ -518,7 +764,7 @@ TEST_F(Single_switch_sensor_test,SwitchStates)
     EXPECT_TRUE(head_->request_aspect(Head_aspect::green));
     EXPECT_EQ(Switch_direction::thrown,switch_1_.get_direction());
 }
-
+*/
 TEST_F(Single_switch_test,SwitchStates)
 {
     SetUp("");

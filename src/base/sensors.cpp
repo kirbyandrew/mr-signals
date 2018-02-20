@@ -11,7 +11,12 @@ using namespace mr_signals;
 
 bool Sensor_base::get_state()
 {
-    return (bool) state_;
+    if(is_indeterminate()) {
+        return false;
+    }
+    else {
+        return (bool) state_;
+    }
 }
 
 bool Sensor_base::is_indeterminate()

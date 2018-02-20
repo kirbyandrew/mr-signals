@@ -3,6 +3,8 @@
 #include <single_switch_head.h>
 #include <double_switch_head.h>
 #include "base/switch_interface.h"
+#include <sensor_interlocked_head.h>
+#include <ryg_logic.h>
 
 #include <vector>
 
@@ -21,6 +23,26 @@ Double_switch_head ds_head1("",sw1,sw2);
 Double_switch_head ds_head2("",sw1,sw2);
 Double_switch_head ds_head3("",sw1,sw2);
 */
+
+Test_sensor lever_1;
+Test_sensor lever_2;
+Test_sensor push_key;
+Test_head   head_1;
+Test_head   head_2;
+/*
+Sensor_interlocked_head logical_head_1(head_1,push_key);
+Interlocked_ryg_logic test_logic_1(logical_head_1,lever_1,{ &s1});
+
+Sensor_interlocked_head logical_head_2(head_2,push_key);
+Interlocked_ryg_logic test_logic_2(logical_head_2,lever_2,{ &s1});
+*/
+
+Lever_with_pushkey interlocked_lever_1(lever_1,push_key);
+Interlocked_ryg_logic test_logic_1(head_1,interlocked_lever_1,{ &s1 });
+
+Lever_with_pushkey interlocked_lever_2(lever_2,push_key);
+//Interlocked_ryg_logic test_logic_2(head_2,interlocked_lever_2,{ &s1 });
+
 int freeRam () {
   extern int __heap_start, *__brkval;
   int v;

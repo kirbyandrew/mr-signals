@@ -8,6 +8,8 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
+#include <stdint.h>
+
 namespace mr_signals {
 
 /**
@@ -32,6 +34,7 @@ public:
      * Only use if .is_indeterminate() == false
      * @return State of the sensor true/false =  active/inactive
      */
+    // TODO: Should this be 'is active'?
     virtual bool get_state() = 0;
 
     /**
@@ -90,8 +93,8 @@ public:
 
     // TODO: Get rid of magic numbers!
 protected:
-    char state_ : 1;            /// The current state of the sensor (0 = inactive, 1 = active)
-    char indeterminate_: 1;     /// Indicates that the state of the sensor is
+    uint8_t state_ : 1;            /// The current state of the sensor (0 = inactive, 1 = active)
+    uint8_t indeterminate_: 1;     /// Indicates that the state of the sensor is
                                 /// not yet known (.set_state() has not been called) when 1
 };
 
@@ -126,6 +129,13 @@ public:
 private:
     Sensor_interface& sensor_;
 };
+
+class Test_sensor : public Sensor_base {
+public:
+    Test_sensor() {}
+    Test_sensor(bool state) { set_state(state); }
+};
+
 
 
 }   // namespace mr_signals

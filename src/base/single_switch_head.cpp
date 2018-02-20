@@ -53,23 +53,26 @@ void Single_switch_head::loop()
 
 
 
-
+/*
 Single_switch_sensor_head::Single_switch_sensor_head(const char *name,
         Switch_interface& switch_1, Sensor_interface& sensor) :
         Single_switch_head(name,switch_1), sensor_(sensor)
 {
 
 }
-
+*/
 /**
  * Allows the underlying head aspect to be set if the aspect requested is
  * dark, red or if the sensor is active for any other aspect
  *
+ * Example use case is push-key controlled call-on signal.  The push
+ * key has to be active when an interlocking lever is reversed for the
+ * head to show a non-red aspect, but the key can be released after that
+ *
  * @param aspect
  * @return true if the state of the head changes
  */
-// TODO: Why can't this use case be handled with the button being
-// an inverted protected sensor
+/*
 bool Single_switch_sensor_head::request_aspect(const Head_aspect aspect)
 {
 
@@ -85,6 +88,7 @@ bool Single_switch_sensor_head::request_aspect(const Head_aspect aspect)
     }
 }
 
+*/
 
 
 

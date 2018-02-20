@@ -49,6 +49,7 @@ private:
  * pushkey for the signal to clear.
  *
  */
+/*
 class Single_switch_sensor_head : public Single_switch_head
 {
 public:
@@ -58,10 +59,12 @@ public:
 
     bool request_aspect(const Head_aspect aspect) override;
 
+  //  void loop() override;
+
 private:
     Sensor_interface& sensor_;
 };
-
+*/
 }
 
 
