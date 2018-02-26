@@ -29,8 +29,8 @@ bool Double_switch_head::request_outputs(const Head_aspect aspect) {
         break;
 
     case Head_aspect::green:
-        if (true == switch_1_.request_direction(Switch_direction::thrown)) {
-            result = switch_2_.request_direction(Switch_direction::closed);
+        if (true == switch_1_.request_direction(Switch_direction::closed)) {
+            result = switch_2_.request_direction(Switch_direction::thrown);
         }
         break;
 
@@ -41,8 +41,8 @@ bool Double_switch_head::request_outputs(const Head_aspect aspect) {
         break;
 
     case Head_aspect::red:
-        if (true == switch_1_.request_direction(Switch_direction::closed)) {
-            result = switch_2_.request_direction(Switch_direction::thrown);
+        if (true == switch_1_.request_direction(Switch_direction::thrown)) {
+            result = switch_2_.request_direction(Switch_direction::closed);
         }
         break;
 

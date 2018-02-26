@@ -36,12 +36,12 @@ bool Sensor_base::set_state(const bool state)
 
     // Check if the state of the sensor changes
     if (state != (bool) state_) {
-        state_ = (true==state) ? 1 : 0;
+        state_ = (true==state) ? sensor_active : sensor_inactive;
         changed = true;
     }
 
     // Once set, the state is no longer indeterminate
-    indeterminate_ = 0;
+    indeterminate_ = sensor_inactive;
 
     return changed;
 }

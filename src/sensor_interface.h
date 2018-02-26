@@ -67,7 +67,7 @@ class Sensor_base : public Sensor_interface {
 
 public:
 
-    Sensor_base() { indeterminate_ = 1; }
+    Sensor_base() { indeterminate_ = sensor_active; }
 
     /**
      * Obtain the state of the sensor
@@ -91,8 +91,14 @@ public:
      */
     bool set_state(const bool state);
 
-    // TODO: Get rid of magic numbers!
 protected:
+    enum
+    {
+        sensor_inactive=0,
+        sensor_active
+    };
+
+
     uint8_t state_ : 1;            /// The current state of the sensor (0 = inactive, 1 = active)
     uint8_t indeterminate_: 1;     /// Indicates that the state of the sensor is
                                 /// not yet known (.set_state() has not been called) when 1

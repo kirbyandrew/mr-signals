@@ -25,6 +25,11 @@ enum class Head_aspect : uint8_t
     max_head_aspect /// For range checking: valid: >= unknown && < max_head_aspect
 };
 
+inline Head_aspect operator++(Head_aspect& aspect,int)
+{
+    return aspect = static_cast<Head_aspect>(static_cast<uint8_t>(aspect)+1);
+}
+
 
 
 /**
@@ -56,8 +61,10 @@ public:
     /// Allows anything attached to the head to have its processing loop executed
     virtual void loop() = 0;
 
+    //TODO: Go and make everything else const that doesn't affect the class!
+
     /// Get the current aspect of the head
-    virtual Head_aspect get_aspect();
+    virtual Head_aspect get_aspect() const;
 
     /// Get the name of the head
     virtual const char* get_name();
@@ -114,10 +121,10 @@ private:
  */
 class Fixed_red_head : public Head_interface
 {
-
+public:
     Fixed_red_head() : Head_interface("") {}
 
-    Head_aspect get_aspect() override
+    Head_aspect get_aspect() const override
     {
         return Head_aspect::red;
     }
@@ -132,6 +139,7 @@ class Fixed_red_head : public Head_interface
     {
     }
 
+    bool request_outputs(Head_aspect) override { return false;}
 };
 
 /**
@@ -140,7 +148,7 @@ class Fixed_red_head : public Head_interface
 class Test_head : public Head_interface
 {
 public:
-    Test_head() : Head_interface("") {}
+    Test_head(const char* name = "") : Head_interface(name) {}
 
     bool request_aspect(const Head_aspect aspect) override
     {
@@ -160,6 +168,7 @@ public:
 
 
 };
+
 
 /// Get a string representation of the pass Head_aspect state
 const char* get_aspect_string(const Head_aspect);

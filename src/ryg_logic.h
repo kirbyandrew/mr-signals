@@ -9,7 +9,11 @@
 #define SRC_RYG_LOGIC_H_
 
 #include <stdint.h>
+#include <vector>
+#include <initializer_list>
 #include "base/logic_interface.h"
+#include "head_interface.h"
+#include "sensor_interface.h"
 
 
 

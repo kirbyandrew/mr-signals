@@ -8,8 +8,8 @@
  */
 
 
-#include <ryg_logic.h>
 #include "gtest/gtest.h"
+
 
 #include "sensor_interface.h"
 #include "head_interface.h"
@@ -17,7 +17,9 @@
 #include "single_switch_head.h"
 #include "double_switch_head.h"
 #include "quadln_s_head.h"
-#include "sensor_interlocked_head.h"
+#include "logic_collection.h"
+#include "ryg_logic.h"
+#include "helpers.h"
 
 using namespace mr_signals;
 
@@ -131,6 +133,33 @@ protected:
     Sensor_base base_sensor_2_;
 };
 
+TEST(RedHeadSensor,BasicStates)
+{
+    Test_head head;
+    Red_head_sensor sensor(head);
+
+    // Loop through all aspects; the Red_head_sensor should return inactive for all
+    // aspects other than ::red
+    for(Head_aspect aspect=Head_aspect::unknown; aspect<Head_aspect::max_head_aspect;aspect++) {
+        head.request_aspect(aspect);
+
+        EXPECT_FALSE(sensor.is_indeterminate());
+
+        if(Head_aspect::red == aspect){
+            EXPECT_TRUE(sensor.get_state());
+        }
+        else {
+            EXPECT_FALSE(sensor.get_state());
+        }
+    }
+
+
+    EXPECT_FALSE(sensor.is_indeterminate());
+    EXPECT_FALSE(sensor.get_state());
+
+    head.request_aspect(Head_aspect::green);
+
+}
 
 TEST(LeverWithPushKey,BasicStates)
 {
@@ -635,7 +664,7 @@ TEST_F(Double_switch_test,SwitchStates)
     EXPECT_EQ(Switch_direction::unknown,test_switch_2_.get_direction());
 
     EXPECT_FALSE(head_->request_aspect(Head_aspect::green));
-    EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(Switch_direction::closed,test_switch_1_.get_direction());
     EXPECT_EQ(Switch_direction::unknown,test_switch_2_.get_direction());
 
     EXPECT_FALSE(head_->request_aspect(Head_aspect::yellow));
@@ -643,7 +672,7 @@ TEST_F(Double_switch_test,SwitchStates)
     EXPECT_EQ(Switch_direction::unknown,test_switch_2_.get_direction());
 
     EXPECT_FALSE(head_->request_aspect(Head_aspect::red));
-    EXPECT_EQ(Switch_direction::closed,test_switch_1_.get_direction());
+    EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
     EXPECT_EQ(Switch_direction::unknown,test_switch_2_.get_direction());
 
     // Test all of the aspects once the second switch is
@@ -654,16 +683,16 @@ TEST_F(Double_switch_test,SwitchStates)
     EXPECT_EQ(Switch_direction::closed,test_switch_2_.get_direction());
 
     EXPECT_TRUE(head_->request_aspect(Head_aspect::green));
-    EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
-    EXPECT_EQ(Switch_direction::closed,test_switch_2_.get_direction());
+    EXPECT_EQ(Switch_direction::closed,test_switch_1_.get_direction());
+    EXPECT_EQ(Switch_direction::thrown,test_switch_2_.get_direction());
 
     EXPECT_TRUE(head_->request_aspect(Head_aspect::yellow));
     EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
     EXPECT_EQ(Switch_direction::thrown,test_switch_2_.get_direction());
 
     EXPECT_TRUE(head_->request_aspect(Head_aspect::red));
-    EXPECT_EQ(Switch_direction::closed,test_switch_1_.get_direction());
-    EXPECT_EQ(Switch_direction::thrown,test_switch_2_.get_direction());
+    EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(Switch_direction::closed,test_switch_2_.get_direction());
 }
 
 
@@ -681,8 +710,8 @@ TEST_F(Double_switch_test,HeldStates)
     head_->set_held(true);
     EXPECT_TRUE(head_->is_held());
 
-    EXPECT_EQ(Switch_direction::closed,test_switch_1_.get_direction());
-    EXPECT_EQ(Switch_direction::thrown,test_switch_2_.get_direction());
+    EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(Switch_direction::closed,test_switch_2_.get_direction());
 
 
     // Head remains held if the same aspect is requestd
@@ -694,8 +723,8 @@ TEST_F(Double_switch_test,HeldStates)
     EXPECT_FALSE(head_->request_aspect(Head_aspect::green));
     EXPECT_FALSE(head_->request_aspect(Head_aspect::dark));
 
-    EXPECT_EQ(Switch_direction::closed,test_switch_1_.get_direction());
-    EXPECT_EQ(Switch_direction::thrown,test_switch_2_.get_direction());
+    EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
+    EXPECT_EQ(Switch_direction::closed,test_switch_2_.get_direction());
 
 
     EXPECT_TRUE(head_->is_held());

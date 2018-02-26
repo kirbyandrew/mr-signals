@@ -3,7 +3,6 @@
 #include <single_switch_head.h>
 #include <double_switch_head.h>
 #include "base/switch_interface.h"
-#include <sensor_interlocked_head.h>
 #include <ryg_logic.h>
 
 #include <vector>

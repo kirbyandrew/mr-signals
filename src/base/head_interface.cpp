@@ -74,7 +74,7 @@ void Head_interface::set_aspect(Head_aspect aspect)
     aspect_ = (uint8_t) aspect;
 }
 
-Head_aspect Head_interface::get_aspect()
+Head_aspect Head_interface::get_aspect() const
 {
     return (Head_aspect) aspect_;
 }

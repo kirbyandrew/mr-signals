@@ -8,11 +8,6 @@
 #ifndef SRC_BASE_LOGIC_INTERFACE_H_
 #define SRC_BASE_LOGIC_INTERFACE_H_
 
-#include <vector>
-#include <initializer_list>
-#include "head_interface.h"
-#include "sensor_interface.h"
-
 
 namespace mr_signals {
 
