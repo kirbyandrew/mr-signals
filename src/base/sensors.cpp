@@ -9,7 +9,7 @@
 
 using namespace mr_signals;
 
-bool Sensor_base::get_state()
+bool Sensor_base::is_active()
 {
     if(is_indeterminate()) {
         return false;
@@ -19,7 +19,7 @@ bool Sensor_base::get_state()
     }
 }
 
-bool Sensor_base::is_indeterminate()
+bool Sensor_base::is_indeterminate() const
 {
     return (bool) indeterminate_;
 }
@@ -59,17 +59,18 @@ Inverted_sensor::Inverted_sensor(Sensor_interface& sensor) :
  * While get_state() should not be called if a sensor is indeterminate,
  * the return is forced to false to protect against that case
  * @return
- */bool Inverted_sensor::get_state()
+ */
+bool Inverted_sensor::is_active()
 {
     if(sensor_.is_indeterminate()) {
         return false;
     }
     else {
-        return !sensor_.get_state();
+        return !sensor_.is_active();
     }
 }
 
-bool Inverted_sensor::is_indeterminate()
+bool Inverted_sensor::is_indeterminate() const
 {
     return sensor_.is_indeterminate();
 }

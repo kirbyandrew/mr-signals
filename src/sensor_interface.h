@@ -19,7 +19,8 @@ namespace mr_signals {
  * push buttons etc.; essentially anything that has a active, inactive or
  * unknown value.
  * Later classes specialize this interface to connect it to the physical
- * input to the system (bus, discrete input, etc)
+ * input to the system (bus, discrete input, etc); the method to set the
+ * state is deferred to each later class
  *
  * This interface only allows a user to determine whether the state of the
  * sensor is known, and if it is, its current state
@@ -34,8 +35,9 @@ public:
      * Only use if .is_indeterminate() == false
      * @return State of the sensor true/false =  active/inactive
      */
-    // TODO: Should this be 'is active'?
-    virtual bool get_state() = 0;
+    // TODO: This really should be a const function, but the Lever_with_pushkey class
+    // uses this function to change the internal states!
+    virtual bool is_active()  = 0;
 
     /**
      * Determine whether the state of the sensor is known
@@ -43,7 +45,7 @@ public:
      * is received from a bus or polled from an input
      * @return true = state not know, false = state is known, and .get_state() can be used
      */
-    virtual bool is_indeterminate() = 0;
+    virtual bool is_indeterminate() const = 0;
 
     virtual ~Sensor_interface() = default;
 };
@@ -74,7 +76,7 @@ public:
      * Only use if .is_indeterminate() == false
      * @return State of the sensor true/false =  active/inactive
      */
-    bool get_state() override;
+    bool is_active() override;
 
     /**
      * Determine whether the state of the sensor is known
@@ -82,7 +84,7 @@ public:
      * is received from a bus or polled from an input
      * @return
      */
-    bool is_indeterminate() override;
+    bool is_indeterminate() const override;
 
     /// Set the state of the sensor true or false
     /** \brief Allows the state of the sensor to be set (active/inactive = true/false)
@@ -113,8 +115,8 @@ protected:
 
 class Active_sensor : public Sensor_interface {
 public:
-    bool get_state() override { return true; }
-    bool is_indeterminate() override { return false; }
+    bool is_active() override { return true; }
+    bool is_indeterminate() const override { return false; }
 };
 
 
@@ -127,9 +129,9 @@ class Inverted_sensor : public Sensor_interface {
 public:
     Inverted_sensor(Sensor_interface& sensor);
 
-    bool get_state() override;
+    bool is_active() override;
 
-    bool is_indeterminate() override;
+    bool is_indeterminate() const override;
 
 
 private:

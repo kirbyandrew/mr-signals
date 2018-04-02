@@ -18,14 +18,8 @@ using namespace mr_signals;
 // Ideally pass an algorithm with each head, but that's then another reference per head
 
 
-// TODO: If a mast doesn't have a interlocking lever, there's really no need to
-// associated them together in a mast.  Really the mast is just implementing the
-// logic for the head; they can be collected together and processed like the masts
 
-// Try breaking them up after getting them working :) to compare memory consumption
-
-
-// To test in Arduino
+// TODO To test in Arduino
 // - cost of passing initializer list
 // comparison of individual classes for 'head_logic' rather than masts that collect it
 
@@ -73,7 +67,7 @@ void Simple_ryg_logic::loop()
         // First check the protected sensors
         if (std::any_of(protected_sensors_.begin(),
                         protected_sensors_.end(),
-                        [](Sensor_interface* sensor) {return sensor->get_state();})) {
+                        [](Sensor_interface* sensor) {return sensor->is_active();})) {
 
             // A protected block is occupied, set the head red
             aspect = Head_aspect::red;
@@ -156,7 +150,7 @@ Interlocked_ryg_logic::Interlocked_ryg_logic(Head_interface& head,
 void Interlocked_ryg_logic::loop()
 {
     if(!lever_.is_indeterminate()) {
-        if(lever_.get_state()) {
+        if(lever_.is_active()) {
             // Lever is reversed
 
             // Run the underlying simple logic
@@ -169,7 +163,7 @@ void Interlocked_ryg_logic::loop()
                 bool is_automated = false;
 
                 if(nullptr!=automated_lever_) {
-                    if(automated_lever_->get_state()) {
+                    if(automated_lever_->is_active()) {
                         is_automated = true;
                     }
                 }
@@ -205,7 +199,8 @@ void Interlocked_ryg_logic::loop()
  *
  * @param lever
  * @param push_key
- */Lever_with_pushkey::Lever_with_pushkey(Sensor_interface& lever,
+ */
+Lever_with_pushkey::Lever_with_pushkey(Sensor_interface& lever,
         Sensor_interface& push_key) :
         lever_(lever), push_key_(push_key),
         lever_reversed_(latched_false), state_(latched_false)
@@ -214,7 +209,7 @@ void Interlocked_ryg_logic::loop()
 
 /// If either the lever or push key's state is currently indeterminate
 /// return that the logical lever is indeterminate
-bool Lever_with_pushkey::is_indeterminate()
+bool Lever_with_pushkey::is_indeterminate() const
 {
     bool return_val = false;
 
@@ -230,7 +225,7 @@ bool Lever_with_pushkey::is_indeterminate()
  * the concrete lever is reversed when the push key is already pressed
  *
  * When the state of the logical lever is requested, the latched state of
- * the lever is checked agains the concrete lever's current state.  If the
+ * the lever is checked against the concrete lever's current state.  If the
  * concrete lever's state has not changed, return the latched state of the logical
  * lever.
  * If the concrete lever state has changed, check it's state (active or inactive),
@@ -238,14 +233,14 @@ bool Lever_with_pushkey::is_indeterminate()
  * latch and return appropriate states
  * @return
  */
-bool Lever_with_pushkey::get_state()
+bool Lever_with_pushkey::is_active()
 {
     if(!is_indeterminate()) {
-        if((bool)lever_reversed_ != lever_.get_state()) {
+        if((bool)lever_reversed_ != lever_.is_active()) {
 
-            if(lever_.get_state()) {
+            if(lever_.is_active()) {
                 if(!lever_reversed_) {
-                    if(push_key_.get_state()){
+                    if(push_key_.is_active()){
                         // The state of the logical lever only goes true
                         // (active) if the pushkey is active when the concrete
                         // lever changes from inactive to active

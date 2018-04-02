@@ -12,7 +12,7 @@
 #include <vector>
 #include <initializer_list>
 #include "base/logic_interface.h"
-#include "head_interface.h"
+#include "base/head_interface.h"
 #include "sensor_interface.h"
 
 
@@ -30,6 +30,8 @@ public:
             std::initializer_list<Sensor_interface *> const & protected_sensors);
 
     void loop() override;
+
+    virtual ~Simple_ryg_logic() = default;
 
 protected:
 
@@ -64,6 +66,8 @@ public:
 
     void loop() override;
 
+    virtual ~Interlocked_ryg_logic() = default;
+
 private:
     Sensor_interface& lever_;               // Reference as mandatory
     Sensor_interface* automated_lever_;     // Pointer as optional
@@ -93,8 +97,8 @@ class Lever_with_pushkey : public Sensor_interface
 public:
     Lever_with_pushkey(Sensor_interface& lever, Sensor_interface& push_key);
 
-    bool get_state() override;
-    bool is_indeterminate() override;
+    bool is_active() override;
+    bool is_indeterminate() const override;
 
 private:
     Sensor_interface& lever_;

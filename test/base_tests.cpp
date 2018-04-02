@@ -63,25 +63,6 @@ protected:
 };
 
 
-/*
-class Single_switch_sensor_test : public ::testing::Test {
-
-protected:
-    void SetUp()
-    {
-        head_ = new Single_switch_sensor_head("",switch_1_,sensor_1_);
-    }
-
-    void TearDown()
-    {
-        delete head_;
-    }
-
-    Single_switch_sensor_head* head_;
-    Test_switch switch_1_;
-    Sensor_base sensor_1_;
-};
-*/
 class Single_switch_test : public ::testing::Test {
 
 protected:
@@ -133,6 +114,12 @@ protected:
     Sensor_base base_sensor_2_;
 };
 
+/*
+ * Test the basic function of the RedHedSensor
+ *
+ * The Sensor should return inactive for all aspects of the associated head,
+ * except red, where it should return active
+ */
 TEST(RedHeadSensor,BasicStates)
 {
     Test_head head;
@@ -146,18 +133,12 @@ TEST(RedHeadSensor,BasicStates)
         EXPECT_FALSE(sensor.is_indeterminate());
 
         if(Head_aspect::red == aspect){
-            EXPECT_TRUE(sensor.get_state());
+            EXPECT_TRUE(sensor.is_active());
         }
         else {
-            EXPECT_FALSE(sensor.get_state());
+            EXPECT_FALSE(sensor.is_active());
         }
     }
-
-
-    EXPECT_FALSE(sensor.is_indeterminate());
-    EXPECT_FALSE(sensor.get_state());
-
-    head.request_aspect(Head_aspect::green);
 
 }
 
@@ -169,7 +150,7 @@ TEST(LeverWithPushKey,BasicStates)
     Test_sensor push_key_;
     Lever_with_pushkey interlocked_lever_(lever_,push_key_);
 
-    EXPECT_FALSE(interlocked_lever_.get_state());
+    EXPECT_FALSE(interlocked_lever_.is_active());
 
     EXPECT_TRUE(interlocked_lever_.is_indeterminate());
     lever_.set_state(false);
@@ -179,47 +160,36 @@ TEST(LeverWithPushKey,BasicStates)
 
 
     lever_.set_state(true);
-    EXPECT_FALSE(interlocked_lever_.get_state());
-    EXPECT_FALSE(interlocked_lever_.get_state());
+    EXPECT_FALSE(interlocked_lever_.is_active());
+    EXPECT_FALSE(interlocked_lever_.is_active());
 
     push_key_.set_state(true);
-    EXPECT_FALSE(interlocked_lever_.get_state());
-    EXPECT_FALSE(interlocked_lever_.get_state());
+    EXPECT_FALSE(interlocked_lever_.is_active());
+    EXPECT_FALSE(interlocked_lever_.is_active());
 
     lever_.set_state(false);
-    EXPECT_FALSE(interlocked_lever_.get_state());
-    EXPECT_FALSE(interlocked_lever_.get_state());
+    EXPECT_FALSE(interlocked_lever_.is_active());
+    EXPECT_FALSE(interlocked_lever_.is_active());
 
     lever_.set_state(true);
-    EXPECT_TRUE(interlocked_lever_.get_state());
-    EXPECT_TRUE(interlocked_lever_.get_state());
+    EXPECT_TRUE(interlocked_lever_.is_active());
+    EXPECT_TRUE(interlocked_lever_.is_active());
 
 }
 
 TEST(Interlocked_ryg_test,CallOnButton)
 {
-    Test_sensor lever_(true);
-    Test_sensor push_key_(false);
-    Test_sensor sensor_1_(false);
-    Test_switch test_switch_1_;
+    Test_sensor lever_(true);       // Lever controlling the head
+    Test_sensor push_key_(false);   // Push key for the interlocked head
+    Test_sensor sensor_1_(false);   // Sensor the head is protecting
 
-// Option1: Needs the head set to ::red and held to work
-//  Single_switch_sensor_head head_("",test_switch_1_,push_key_);
-//    Interlocked_ryg_logic test_logic_(head_, lever_, { &sensor_1_ });
-    //  head_.request_aspect(Head_aspect::red);
-    //  head_.set_held(true);
+    Test_head head_;                // Head under test
 
-
-// Option2: Use Sensor_interlocked_head
-//    Test_head head_;
-//    Sensor_interlocked_head logical_head_(head_,push_key_);
-//    Interlocked_ryg_logic test_logic_(logical_head_,lever_,{ &sensor_1_ });
-
-// Option3 : Use Lever_with_pushkey
-    Test_head head_;
+    // Combine the lever and the pushkey into a lever object for the logic
     Lever_with_pushkey interlocked_lever_(lever_,push_key_);
-    Interlocked_ryg_logic test_logic_(head_,interlocked_lever_,{ &sensor_1_ });
 
+    // Interlocked lever logic
+    Interlocked_ryg_logic test_logic_(head_,interlocked_lever_,{ &sensor_1_ });
 
 
     // If the lever is reversed but the pushkey isn't pressed,
@@ -251,18 +221,20 @@ TEST(Interlocked_ryg_test,CallOnButton)
     EXPECT_EQ(Head_aspect::green, head_.get_aspect());
 
 
+    // If the lever is then reversed, the head should return to red
     lever_.set_state(false);
     test_logic_.loop();
     EXPECT_EQ(Head_aspect::red, head_.get_aspect());
 
+    // Reversing the lever without the pushkey will leave the head at red
     lever_.set_state(true);
     test_logic_.loop();
     EXPECT_EQ(Head_aspect::red, head_.get_aspect());
 
+    // Pressing the key after the lever is reversed will not clear the signal
     push_key_.set_state(true);
     test_logic_.loop();
     EXPECT_EQ(Head_aspect::red, head_.get_aspect());
-
 }
 
 
@@ -918,19 +890,19 @@ TEST(InvertedSensor,Inversion)
     EXPECT_TRUE(sensor_.is_indeterminate());
     EXPECT_TRUE(inverted_sensor_.is_indeterminate());
 
-    EXPECT_FALSE(inverted_sensor_.get_state());
+    EXPECT_FALSE(inverted_sensor_.is_active());
 
     sensor_.set_state(true);
     EXPECT_FALSE(sensor_.is_indeterminate());
     EXPECT_FALSE(inverted_sensor_.is_indeterminate());
-    EXPECT_TRUE(sensor_.get_state());
-    EXPECT_FALSE(inverted_sensor_.get_state());
+    EXPECT_TRUE(sensor_.is_active());
+    EXPECT_FALSE(inverted_sensor_.is_active());
 
     sensor_.set_state(false);
     EXPECT_FALSE(sensor_.is_indeterminate());
     EXPECT_FALSE(inverted_sensor_.is_indeterminate());
-    EXPECT_FALSE(sensor_.get_state());
-    EXPECT_TRUE(inverted_sensor_.get_state());
+    EXPECT_FALSE(sensor_.is_active());
+    EXPECT_TRUE(inverted_sensor_.is_active());
 }
 
 
@@ -958,7 +930,7 @@ void sensor_base_set_state_test(Sensor_base& sensor, bool state,
 
 
     EXPECT_EQ(false, sensor.is_indeterminate());
-    EXPECT_EQ(state , sensor.get_state());
+    EXPECT_EQ(state , sensor.is_active());
 }
 
 // Test the initialization and then changing of states of the base sensor
@@ -987,7 +959,7 @@ TEST_F(Base_sensor_test, TestStates) {
 
 TEST_F(Active_sensor_test, IsEmptyInitially) {
   EXPECT_EQ(false, active_sensor_.is_indeterminate());
-  EXPECT_EQ(true, active_sensor_.get_state());
+  EXPECT_EQ(true, active_sensor_.is_active());
 }
 
 

@@ -79,7 +79,7 @@ Head_aspect Head_interface::get_aspect() const
     return (Head_aspect) aspect_;
 }
 
-const char* Head_interface::get_name()
+const char* Head_interface::get_name() const
 {
     return name_;
 }
@@ -89,7 +89,7 @@ void Head_interface::set_held(const bool held)
     held_ = (aspect_ != (uint8_t) Head_aspect::unknown && true==held) ? held_true : held_false;
 }
 
-bool Head_interface::is_held()
+bool Head_interface::is_held() const
 {
     // Would ideally be (held_true == held_) but gcc appears to promote held_
     // to an int for this comparison, which yields a value of -1 rather than 1

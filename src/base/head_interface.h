@@ -39,6 +39,9 @@ inline Head_aspect operator++(Head_aspect& aspect,int)
  * implementation, whether that be to use switches, discrete outputs,
  * whatever
  */
+
+// TODO: Is this strictly an interface?  it implements some things.  Abstract
+// class better?
 class Head_interface
 {
 public:
@@ -61,19 +64,17 @@ public:
     /// Allows anything attached to the head to have its processing loop executed
     virtual void loop() = 0;
 
-    //TODO: Go and make everything else const that doesn't affect the class!
-
     /// Get the current aspect of the head
     virtual Head_aspect get_aspect() const;
 
     /// Get the name of the head
-    virtual const char* get_name();
+    virtual const char* get_name() const;
 
     /// 'Lock' the current aspect of the head. Ignored if the state is unknown
     virtual void set_held(const bool);
 
     /// Indicate whether the head's aspect is currently locked
-    virtual bool is_held();
+    virtual bool is_held() const;
 
 
     Head_interface(const char* name);

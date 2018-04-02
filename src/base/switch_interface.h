@@ -74,10 +74,10 @@ public:
     }
 
     /// Let tests access the switch's direction
-    Switch_direction  get_direction() { return direction_; }
+    Switch_direction  get_direction() const { return direction_; }
 
     /// Let tests access the number of times .loop() has been called
-    int get_loop_cnt() { return loop_cnt_; }
+    int get_loop_cnt() const { return loop_cnt_; }
 
     /// Locks a switch so that requests to change the direction fail
     void set_lock(const bool lock) { lock_ = lock; }

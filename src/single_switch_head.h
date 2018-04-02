@@ -35,6 +35,8 @@ public:
 
     void loop() override;
 
+    // TODO: How to find all classes that don't have virtual destructors??  Why needed?
+
 private:
     Switch_interface& switch_1_;
 };
