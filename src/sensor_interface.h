@@ -120,7 +120,6 @@ public:
 };
 
 
-
 /**
  * Wrapper to allow the inverted state of a sensor to be passed to to an
  * object that uses Sensor_interface.

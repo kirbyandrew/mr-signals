@@ -29,6 +29,8 @@ namespace mr_signals {
 class Loconet_sensor;   // Forward definition for Mrrwa_loconet_adapter
 
 
+#define POWER_ON_DELAY_MS 200
+
 class Mrrwa_loconet_adapter : public Loconet_adapter_interface
 {
 public:
@@ -54,15 +56,18 @@ public:
     void notify_sensors(uint16_t address, bool state);
 
 
+
 private:
 
     void receive_loop();
     void transmit_loop();
+    void send_global_power_on_loop();
+
 //    bool QueueLocoNetMsg(lnMsg *msg);
 
     std::vector<Loconet_sensor*> sensors_;
 
-    long send_gp_on_time_ms_;  // Next time from get_time_ms() to send the Global Power On message
+    Runtime_ms send_gp_on_time_ms_;  // Next time from get_time_ms() to send the Global Power On message
 
     LocoNetClass& loconet_;
 };

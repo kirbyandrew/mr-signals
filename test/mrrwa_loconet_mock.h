@@ -26,12 +26,20 @@ typedef enum
     LN_RETRY_ERROR
 } LN_STATUS ;
 
+typedef struct {
+    uint8_t command;   /* LocoNet Op Code */
+    uint8_t mesg_size; /* size of the message in bytes */
+} szMsg;
 
 
-struct lnMsg
+typedef union
 {
+    szMsg sz;
     uint8_t data[16];
-};
+} lnMsg;
+
+
+uint8_t getLnMsgSize( volatile lnMsg * Msg );
 
 
 /*
@@ -97,10 +105,9 @@ public:
     virtual void init(uint8_t tx_pin) = 0;
 
     virtual LN_STATUS reportPower( uint8_t State ) = 0;
+    virtual lnMsg* receive() = 0;
 
     /*
-    virtual void reportPower(int pwr) = 0;
-    virtual lnMsg* receive() = 0;
     virtual void send(lnMsg*) = 0;
     virtual void processSwitchSensorMessage(lnMsg*) = 0;
     */
@@ -114,6 +121,8 @@ public:
     MOCK_METHOD1(init,void(uint8_t tx_pin));
 
     MOCK_METHOD1(reportPower,LN_STATUS(uint8_t State ));
+
+    MOCK_METHOD0(receive,lnMsg*());
 
 /*
     MOCK_METHOD1(reportPower,void(int pwr));
