@@ -4,8 +4,10 @@
 #include <double_switch_head.h>
 #include "base/switch_interface.h"
 #include <ryg_logic.h>
-
 #include <vector>
+#include <mr_signals.h>   // Print()
+
+#include "loconet/mrrwa_loconet_adapter.h"
 
 using namespace mr_signals;
 
@@ -48,19 +50,33 @@ int freeRam () {
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
+
+
 // TODO: Use an initializer list to add a bunch of ints to check how efficient the re-allocation is
 void setup() {
   // put your setup code here, to run once:
  // test_switch.loop();
 
 
-  Serial.begin(9600);
+//  Serial.begin(9600);
 //  Serial.begin(57600);
+  Serial.begin(115200);
+  
+  Serial << "mr_signals test" << "\r\n";
+
   Serial.println("Blackwood Tower");
   Serial.write("free RAM : ");
   Serial.println(freeRam());
 
   std::vector<int> v;
+
+  Serial.print(v.capacity(),HEX);
+  Serial << v.capacity(),HEX;
+  Serial << HEX << v.capacity();
+
+  uint8_t val = 2;
+  Serial << unsigned(val) << "\r\n";
+
 
   Serial.write("after declaring v : ");
   Serial.println(freeRam());
@@ -121,6 +137,29 @@ void setup() {
   v.reserve(10);
 
   Serial.write("after reserve : ");
+  Serial.println(freeRam());
+
+  Serial.write("v.capacity : ");
+  Serial.println(v.capacity());
+
+  Serial.write("v.size : ");
+  Serial.println(v.size());
+
+  v.push_back(5);
+
+  Serial.write("after push_back(5) : ");
+  Serial.println(freeRam());
+
+  Serial.write("v.capacity : ");
+  Serial.println(v.capacity());
+
+  Serial.write("v.size : ");
+  Serial.println(v.size());
+
+
+  v.push_back(6);
+
+  Serial.write("after push_back(6) : ");
   Serial.println(freeRam());
 
   Serial.write("v.capacity : ");

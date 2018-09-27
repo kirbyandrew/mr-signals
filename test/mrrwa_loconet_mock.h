@@ -13,7 +13,6 @@
 #include "gmock/gmock.h"
 
 
-namespace mr_signals {
 
 typedef enum
 {
@@ -31,12 +30,57 @@ typedef struct {
     uint8_t mesg_size; /* size of the message in bytes */
 } szMsg;
 
+/* Sensor input report */
+typedef struct inputrep_t {
+    uint8_t command;
+    uint8_t in1;           /* first  byte of report                                */
+    uint8_t in2;           /* second byte of report                                */
+    uint8_t chksum;        /* exclusive-or checksum for the message                */
+} inputRepMsg;
+
+/* Turnout sensor state report */
+typedef struct swrep_t {
+    uint8_t command;
+    uint8_t sn1;           /* first  byte of report                                */
+    uint8_t sn2;           /* second byte of report                                */
+    uint8_t chksum;        /* exclusive-or checksum for the message                */
+} swRepMsg;
+
+/* Request Switch function */
+typedef struct swreq_t {
+    uint8_t command;
+    uint8_t sw1;           /* first  byte of request                               */
+    uint8_t sw2;           /* second byte of request                               */
+    uint8_t chksum;        /* exclusive-or checksum for the message                */
+} swReqMsg;
+
+/* Slot data request */
+typedef struct slotreq_t {
+    uint8_t command;
+    uint8_t slot;          /* slot number for this request                         */
+    uint8_t pad;           /* should be zero                                       */
+    uint8_t chksum;        /* exclusive-or checksum for the message                */
+} slotReqMsg;
+
+
 
 typedef union
 {
-    szMsg sz;
+    szMsg           sz;
+    inputRepMsg     ir ;
+    swRepMsg        srp ;
+    swReqMsg        srq ;
+    slotReqMsg      sr ;
+
     uint8_t data[16];
 } lnMsg;
+
+
+#define OPC_INPUT_REP     0xb2
+#define OPC_INPUT_REP_CB  0x40  /* control bit, reserved otherwise      */
+#define OPC_INPUT_REP_SW  0x20  /* input is switch input, aux otherwise */
+#define OPC_INPUT_REP_HI  0x10  /* input is HI, LO otherwise            */
+
 
 
 uint8_t getLnMsgSize( volatile lnMsg * Msg );
@@ -106,10 +150,10 @@ public:
 
     virtual LN_STATUS reportPower( uint8_t State ) = 0;
     virtual lnMsg* receive() = 0;
+    virtual uint8_t processSwitchSensorMessage(lnMsg*) = 0;
 
     /*
     virtual void send(lnMsg*) = 0;
-    virtual void processSwitchSensorMessage(lnMsg*) = 0;
     */
     virtual ~LocoNetClass() {}
 
@@ -124,15 +168,12 @@ public:
 
     MOCK_METHOD0(receive,lnMsg*());
 
+    MOCK_METHOD1(processSwitchSensorMessage,uint8_t(lnMsg* msg));
 /*
-    MOCK_METHOD1(reportPower,void(int pwr));
-    MOCK_METHOD0(receive,lnMsg*());
     MOCK_METHOD1(send,void(lnMsg* msg));
-    MOCK_METHOD1(processSwitchSensorMessage,void(lnMsg* msg));
 */
 };
 
-}
 
 
 

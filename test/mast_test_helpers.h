@@ -153,7 +153,7 @@ public:
     }
 
 
-    /// Get the name of the mast's aspect as defined by a vector of Head_aspect::s
+    /// Get the name (enumerated value) of the mast's aspect as defined by a vector of Head_aspect::s
     int get_mast_name(const std::vector<Head_aspect> head_aspects)
     {
         for(auto &rule : mast_rules_ ) {

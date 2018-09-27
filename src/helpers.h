@@ -14,9 +14,9 @@
 namespace mr_signals {
 
 /**
- * Sensor that returns active if an observed head has a red asepct
+ * Sensor that returns active if an observed head has a red aspect
  *
- * Primary use case is to act as a protected sesnor for a head that needs
+ * Primary use case is to act as a protected sensor for a head that needs
  * to show a red aspect when the head that it is protecting is red (in
  * basic RYG logic, this would result in a Yellow Aspect)
  */
@@ -44,7 +44,7 @@ private:
 Head_interface& head_;
 };
 
-
+// TODO : Is this needed?
 
 class Head_aspect_sensor : public Sensor_interface  {
 public:
