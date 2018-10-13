@@ -11,6 +11,8 @@
 #include <vector>
 #include "loconet_adapter_interface.h"
 #include "loconet_sensor.h"
+#include "circular_buffer.h"
+
 
 #ifdef ARDUINO
 
@@ -28,6 +30,46 @@
 
 
 namespace mr_signals {
+
+
+
+
+/**
+ * Handles the management of the LocoNet Transmit buffer for Mrrwa_loconet_adapter
+ *
+ * This class is private to Mrrwa_loconet_adapter and should not be accessed
+ * directly at any time.
+ *
+ */
+class Mrrwa_loconet_tx_buffer
+{
+public:
+
+    bool initialize(std::size_t buffer_size);
+
+
+    /**
+     * Queue a lnMsg (Loconet message) for transmission onto LocoNet
+     *
+     * @param msg - The Loconet message to queue
+     * @return true if enqueued, false otherwise
+     */
+    bool queue_loconet_msg(lnMsg& msg);
+
+    /**
+     *  Dequeue a queued lnMsg (Loconet message)
+     *
+     * @param msg - The dequeued message
+     * @return true if a message was dequed, false if not
+     */
+    bool dequeue_loconet_msg(lnMsg& msg);
+
+
+//private:
+    Circular_buffer loconet_tx_buffer_;
+
+};
+
 
 
 /**
@@ -62,7 +104,7 @@ public:
      * @param loconet       Reference to the MRWWA object in use
      * @param num_sensors   Pre-initialize the list of sensors
      */
-    Mrrwa_loconet_adapter(LocoNetClass& loconet, size_t num_sensors=0);
+    Mrrwa_loconet_adapter(LocoNetClass& loconet, size_t num_sensors=0, size_t tx_buffer_size=100);
 
     /**
      * Perform all setup functions required for the MRWAA Loconet class
@@ -184,9 +226,7 @@ private:
     void transmit_loop();
     void send_global_power_on_loop();
 
-    bool queue_loconet_msg(lnMsg *msg);
 
-//    bool QueueLocoNetMsg(lnMsg *msg);
 
     /// Sensors that are notified
     /// Observer pattern; the adapter class is the subject, each sensor is an observer
@@ -194,11 +234,11 @@ private:
 
     Runtime_ms send_gp_on_time_ms_;  // Next time from get_time_ms() to send the Global Power On message
 
+    Mrrwa_loconet_tx_buffer tx_buffer_;
+
     /// Instance of the MRWWA Loconet Class used by the adapter
     LocoNetClass& loconet_;
 };
-
-//extern MRRWALocoNetAdapter loconet;
 
 
 /*
@@ -215,6 +255,14 @@ constexpr std::chrono::duration<long double, std::milli> operator ""ms(long doub
 
 }
 
+
+
+
+/**
+ * Unfortunate set function to provide a reference to the adapter for use by C
+ * functions in the .cpp file that are required by the MRRWA package
+ * @param adapter
+ */
 void set_mrrwa_loconet_adapter(mr_signals::Mrrwa_loconet_adapter * const adapter);
 
 #endif /* SRC_LOCONET_MRRWA_LOCONET_ADAPTER_H_ */

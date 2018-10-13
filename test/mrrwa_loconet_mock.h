@@ -82,6 +82,15 @@ typedef union
 #define OPC_INPUT_REP_HI  0x10  /* input is HI, LO otherwise            */
 
 
+#define OPC_SW_REQ        0xb0
+#define OPC_SW_REQ_DIR    0x20  /* switch direction - closed/thrown     */
+#define OPC_SW_REQ_OUT    0x10  /* output On/Off                        */
+
+#define OPC_GPON          0x83
+
+
+#define OPC_WR_SL_DATA    0xef
+
 
 uint8_t getLnMsgSize( volatile lnMsg * Msg );
 
@@ -152,9 +161,9 @@ public:
     virtual lnMsg* receive() = 0;
     virtual uint8_t processSwitchSensorMessage(lnMsg*) = 0;
 
-    /*
-    virtual void send(lnMsg*) = 0;
-    */
+
+    virtual LN_STATUS send(lnMsg*) = 0;
+
     virtual ~LocoNetClass() {}
 
 };
@@ -169,9 +178,9 @@ public:
     MOCK_METHOD0(receive,lnMsg*());
 
     MOCK_METHOD1(processSwitchSensorMessage,uint8_t(lnMsg* msg));
-/*
-    MOCK_METHOD1(send,void(lnMsg* msg));
-*/
+
+    MOCK_METHOD1(send,LN_STATUS(lnMsg* msg));
+
 };
 
 

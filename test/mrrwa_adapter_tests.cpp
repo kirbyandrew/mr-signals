@@ -7,6 +7,7 @@
 
 
 #include <iostream>
+#include <cstring>
 
 #include "mrrwa_loconet_adapter.h"
 
@@ -24,6 +25,9 @@ using ::testing::_;
 
 
 extern void notifySensor(uint16_t , uint8_t );
+
+
+
 
 
 // Copy of function from LocoNet.cpp from MRRWA library
@@ -373,5 +377,133 @@ TEST(MrrwaAdapter,SensorDebug)
     EXPECT_EQ(  "Senso (#1): 1 (ind : 0)\n"\
                 "S2 (#2): 0 (ind : 0)\n"\
                 "S0003 (#3): 0 (ind : 1)\n",output);
+
+}
+
+
+/////////////////////////// Mrrwa_loconet_tx_buffer tests ////////////////////
+
+
+/*
+ * Test the enqueuing function
+ */
+TEST(MrrwaTxBuffer,Enqueue)
+{
+    Mrrwa_loconet_tx_buffer tx_buffer;
+    lnMsg msg;
+
+    const std::size_t buffer_size=5;
+
+    tx_buffer.initialize(buffer_size);
+
+
+    // Check the message limits (0,1 & > 16 are all invalid)
+    msg.sz.command = 0x60;
+    msg.sz.mesg_size = 0;
+
+    EXPECT_FALSE(tx_buffer.queue_loconet_msg(msg));
+
+    msg.sz.mesg_size = 1;
+    EXPECT_FALSE(tx_buffer.queue_loconet_msg(msg));
+
+    msg.sz.mesg_size = sizeof(msg)+1;
+    EXPECT_FALSE(tx_buffer.queue_loconet_msg(msg));
+
+
+    EXPECT_EQ(buffer_size,tx_buffer.loconet_tx_buffer_.get_free());
+
+
+    // Enqueue a valid 4 byte message (3 bytes are encoded); there should be space
+    msg.data[0] = OPC_SW_REQ;
+    msg.data[1] = 12;
+    msg.data[2] = 34;
+  //msg.data[3] = Checksum which is created in MRRWA library
+
+    EXPECT_TRUE(tx_buffer.queue_loconet_msg(msg));
+
+    EXPECT_EQ(buffer_size-3,tx_buffer.loconet_tx_buffer_.get_free());
+
+
+    // Attempt to enqueue the same message; as the buffer is only 5 bytes this should fail
+    EXPECT_FALSE(tx_buffer.queue_loconet_msg(msg));
+}
+
+
+/*
+ * Enqueue and dequeue a number of Loconet messages to confirm this functionality
+ */
+
+TEST(MrrwaTxBuffer,Dequeue)
+{
+    Mrrwa_loconet_tx_buffer tx_buffer;
+    lnMsg msg1,msg2,msg3,read_msg;
+
+    const std::size_t buffer_size=8;
+
+    tx_buffer.initialize(buffer_size);
+
+
+    EXPECT_FALSE(tx_buffer.dequeue_loconet_msg(read_msg));
+    EXPECT_EQ(buffer_size,tx_buffer.loconet_tx_buffer_.get_free());
+
+
+    // Enqueue two valid 4 byte message (3 bytes are stored for each)
+    msg1.data[0] = OPC_SW_REQ;
+    msg1.data[1] = 12;
+    msg1.data[2] = 34;
+    EXPECT_TRUE(tx_buffer.queue_loconet_msg(msg1));
+    EXPECT_EQ(buffer_size-3,tx_buffer.loconet_tx_buffer_.get_free());
+
+
+    msg2.data[0] = OPC_SW_REQ;
+    msg2.data[1] = 56;
+    msg2.data[2] = 78;
+    EXPECT_TRUE(tx_buffer.queue_loconet_msg(msg2));
+    EXPECT_EQ(buffer_size-6,tx_buffer.loconet_tx_buffer_.get_free());
+
+
+    // Should not be able to enque msg2 again; not enough space
+    EXPECT_FALSE(tx_buffer.queue_loconet_msg(msg2));
+    EXPECT_EQ(buffer_size-6,tx_buffer.loconet_tx_buffer_.get_free());
+
+
+    // Enqueue a 2 byte message
+    msg3.data[0] = OPC_GPON;
+    msg3.data[1] = 90;
+    EXPECT_TRUE(tx_buffer.queue_loconet_msg(msg3));
+    EXPECT_EQ(buffer_size-8,tx_buffer.loconet_tx_buffer_.get_free());
+
+
+
+
+
+    // Pull the first message, confirm that it matches msg1 and that the free
+    // space has increased
+    std::memset(&read_msg,0x00,sizeof(lnMsg));
+
+    EXPECT_TRUE(tx_buffer.dequeue_loconet_msg(read_msg));
+    EXPECT_EQ(buffer_size-5,tx_buffer.loconet_tx_buffer_.get_free());
+
+    EXPECT_EQ(0,std::memcmp(&read_msg,&msg1,3));
+
+
+    // Pull the second message, confirm that it matches msg2 and that the free
+    // space has increased
+    std::memset(&read_msg,0x00,sizeof(lnMsg));
+
+    EXPECT_TRUE(tx_buffer.dequeue_loconet_msg(read_msg));
+    EXPECT_EQ(buffer_size-2,tx_buffer.loconet_tx_buffer_.get_free());
+
+    EXPECT_EQ(0,std::memcmp(&read_msg,&msg2,3));
+
+
+    // Pull the third message, confirm that it matches msg3 and that the free
+    // space has increased
+    std::memset(&read_msg,0x00,sizeof(lnMsg));
+
+    EXPECT_TRUE(tx_buffer.dequeue_loconet_msg(read_msg));
+    EXPECT_EQ(buffer_size,tx_buffer.loconet_tx_buffer_.get_free());
+
+    EXPECT_EQ(0,std::memcmp(&read_msg,&msg3,2));
 
 }

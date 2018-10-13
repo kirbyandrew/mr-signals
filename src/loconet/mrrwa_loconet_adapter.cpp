@@ -17,6 +17,27 @@
 
 
 
+
+
+/*
+ * Bitmask for inserting transmit delays in the LN tx buffer which otherwise
+ * uses raw LocoNet messages with the length and function using the LN OPC.
+ *
+ * It fits into an unused bit in the OPCs that are added to the LN tx buffer
+ * for all except the Write Slot Data, which just needs to be checked before
+ * checking for the Delay message
+ *
+ * 8x  1xxx xxxx       Power OPCs (not added to LN tx buffer)
+ * Ax  1010 xxxx       Loco OPCs  (not used)
+ * Bx  1011 xxxx       Most OPCs (used)
+ * Ex  1110 xxxx       System OPCs (only EF may be used)
+ * EF  1110 1111       Write Slot Data (OPC_WR_SL_DATA)
+ */
+
+
+//#define NON_LN_DELAY_MSG 0x40
+//#define NON_LN_DELAY_MASK 0x3F
+
 /*
  *
  * Global required to get a local instance of the adapter so that
@@ -55,12 +76,14 @@ void notifySensor(uint16_t Address, uint8_t State)
 namespace mr_signals {
 
 
-Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,size_t num_sensors) :
+Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,size_t num_sensors, size_t tx_buffer_size) :
         send_gp_on_time_ms_(0), loconet_(loconet)
 {
     if(num_sensors) {
         sensors_.reserve(num_sensors);
     }
+
+    tx_buffer_.initialize(tx_buffer_size);
 }
 
 
@@ -97,6 +120,19 @@ void Mrrwa_loconet_adapter::attach_sensor(Loconet_sensor* sensor)
 
 bool Mrrwa_loconet_adapter::send_opc_sw_req(Loconet_address address, bool thrown,bool on)
 {
+    lnMsg SendPacket ;
+
+    int sw2 = 0x00;
+    if (!thrown) { sw2 |= OPC_SW_REQ_DIR; }
+    if (on) { sw2 |= OPC_SW_REQ_OUT; }
+    sw2 |= ((address-1) >> 7) & 0x0F;
+
+    SendPacket.data[ 0 ] = OPC_SW_REQ ;
+    SendPacket.data[ 1 ] = (address-1) & 0x7F ;
+    SendPacket.data[ 2 ] = sw2 ;
+
+    tx_buffer_.queue_loconet_msg(SendPacket);
+
     return true;
 }
 
@@ -119,10 +155,6 @@ size_t Mrrwa_loconet_adapter::sensor_count()
 
 
 
-
-//    void queue_loconet_msg(lnMsg *msg);
-
-    //void PrintSensors();
 
 void Mrrwa_loconet_adapter::notify_sensors(Loconet_address address, bool state) const
 {
@@ -183,7 +215,17 @@ void Mrrwa_loconet_adapter::receive_loop()
 
 void Mrrwa_loconet_adapter::transmit_loop()
 {
+    static Runtime_ms next_tx_time_ms=0;
+    lnMsg ln_msg;
 
+    if(get_time_ms() > next_tx_time_ms) {
+
+        if(tx_buffer_.dequeue_loconet_msg(ln_msg)) {
+
+            (void) loconet_.send(&ln_msg);
+
+        }
+    }
 }
 
 
@@ -212,44 +254,108 @@ void Mrrwa_loconet_adapter::print_sensors() const
 }
 
 
-bool queue_loconet_msg(lnMsg *msg)
-{
 
+///////////////////////////////////////////////////
+
+
+bool Mrrwa_loconet_tx_buffer::initialize(std::size_t buffer_size)
+{
+    return(loconet_tx_buffer_.initialize(buffer_size));
 }
 
+
+/**
+ * Queues a LocoNet message for transmission onto LocoNet
+ * *
+ * First the length of the message is extracted from it using the MRWWA's getLnMsgSize function
+ *
+ * Then sanity checks on the size of the message are performed.  It is critical that the
+ * loop_transmit() function can extract exactly as many bytes are queued in this function
+ * to retain coherency as the LocoNet messages are encoded in the raw without any
+ * container to allow a recovery from invalid data being encoded.  The loop_transmit function
+ * can ignore invalid data, but it has to extract exactly the right number of bytes.
+ *
+ * The sanity checks include:
+ *      Message not too big (larger than lnMsg)
+ *      Message is at least 2 bytes long (minimum LN message)
+ *
+ * After the validity checks, it is checked that the message will fit into
+ * loconet_tx_buffer_.
+ *
+ * If all checks pass, the LocoNet message is added to the loconet_tx_buffer_.
+ *
+ *
+ * @param msg  LN Message to queue
+ * @return  true if the message was queued, false otherwise
+ */
+
+bool Mrrwa_loconet_tx_buffer::queue_loconet_msg(lnMsg& msg)
+{
+    bool return_value = false;
+    uint8_t msg_len = getLnMsgSize(&msg);
+
+    // Messages longer than 2 bytes are encoded without the checksum
+    // The checksum is retained for 2 byte messages as 2 bytes are
+    // extracted for all messages as much longer messages encode
+    // their length in the second byte
+    if(msg_len > 2) {
+        msg_len--;
+    }
+
+    if( msg_len <= sizeof(lnMsg) &&                     // Not too big
+        msg_len >= 2 &&                                 // Not too small
+        msg_len <= loconet_tx_buffer_.get_free()) {     // Can fit into the buffer
+
+
+        for(uint8_t i=0;i<msg_len;i++) {
+            (void) loconet_tx_buffer_.enqueue(msg.data[i]);    // Assume can enqueue if the get_free() above is large enough
+        }
+
+        return_value = true;
+    }
+
+    return (return_value);
+}
+
+/**
+ * Dequeues a message to transmit
+ *
+ * If the transmit buffer is not empty, read the next Loconet message from it
+ * The buffer is a stream of bytes; the length of each message is encoded in the
+ * Loconet message itself.  This function is extremely dependent on valid
+ * LocoNet messages being encoded into the buffer in queue_loconet_msg() to
+ * ensure the correct length can be read out.
+ *
+ * @param msg - Loconet message to populate with the next in the queue
+ * @return true if a message was dequeued, false if not
+ */
+
+bool Mrrwa_loconet_tx_buffer::dequeue_loconet_msg(lnMsg& msg)
+{
+    bool return_value = false;
+
+    // Check if anything is in the buffer
+    if(loconet_tx_buffer_.get_free() < loconet_tx_buffer_.max_size()) {
+
+        // Pull the first two bytes; LN messages are always 2 or more bytes, and the command and
+        // length are encoded in these first two messages
+        loconet_tx_buffer_.dequeue(msg.data[0]);
+        loconet_tx_buffer_.dequeue(msg.data[1]);
+
+        // Read any remaining message (if longer than 2 bytes) from the queue
+        // however for any messages > 2, do not read the checksum as it is
+        // not encoded
+        uint8_t msg_len = getLnMsgSize(&msg);
+
+        for(uint8_t i=2; i<msg_len-1;i++) {
+            loconet_tx_buffer_.dequeue(msg.data[i]);
+        }
+        return_value = true;
+    }
+
+    return (return_value);
+}
 
 
 }   // namespace mr_signals
 
-
-#if 0
-
-
-void MRRWALocoNetAdapter::QueueLocoNetMsg(lnMsg *msg)
-{
-    unsigned char msg_len = getLnMsgSize(msg);
-
-    if(remaining_space(&ln_tx_queue) >= msg_len)
-    {
-        for(unsigned char i = 0; i<msg_len;i++)
-        {
-            enqueue(&ln_tx_queue,msg->data[i]);
-        }
-    }
-}
-
-
-
-RunTimeMs MRRWALocoNetAdapter::GetTimeMs()
-{
-#ifdef _MSC_VER
-    // Fill in
-
-#else
-    return millis();
-
-#endif //
-}
-
-
-#endif
