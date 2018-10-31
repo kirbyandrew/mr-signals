@@ -699,6 +699,14 @@ TEST_F(Quadln_s_test,SwitchStates)
     EXPECT_TRUE(head_->request_aspect(Head_aspect::yellow));
     EXPECT_EQ(Switch_direction::closed,test_switch_1_.get_direction());
     EXPECT_EQ(Switch_direction::thrown,midpoint_switch_.get_direction());
+
+    // Check that the loop function calls the loop of each switch
+    EXPECT_EQ(0,test_switch_1_.get_loop_cnt());
+    EXPECT_EQ(0,midpoint_switch_.get_loop_cnt());
+    head_ -> loop();
+    EXPECT_EQ(1,test_switch_1_.get_loop_cnt());
+    EXPECT_EQ(1,midpoint_switch_.get_loop_cnt());
+
 }
 
 /*
@@ -785,6 +793,14 @@ TEST_F(Double_switch_test,SwitchStates)
     EXPECT_TRUE(head_->request_aspect(Head_aspect::red));
     EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
     EXPECT_EQ(Switch_direction::closed,test_switch_2_.get_direction());
+
+    // Check that the loop function calls the loop of each switch
+    EXPECT_EQ(0,test_switch_1_.get_loop_cnt());
+    EXPECT_EQ(0,test_switch_2_.get_loop_cnt());
+    head_ -> loop();
+    EXPECT_EQ(1,test_switch_1_.get_loop_cnt());
+    EXPECT_EQ(1,test_switch_2_.get_loop_cnt());
+
 }
 
 /*
@@ -867,6 +883,12 @@ TEST_F(Single_switch_head_test,SwitchStates)
 
     EXPECT_TRUE(head_->request_aspect(Head_aspect::green));
     EXPECT_EQ(Switch_direction::thrown,test_switch_1_.get_direction());
+
+
+    // Check that the loop function calls the loop of the switch
+    EXPECT_EQ(0,test_switch_1_.get_loop_cnt());
+    head_ -> loop();
+    EXPECT_EQ(1,test_switch_1_.get_loop_cnt());
 }
 
 
@@ -964,7 +986,7 @@ TEST_F(Single_switch_head_test,EmptyNameCheck)
 {
     SetUp("");
     const char* name = head_->get_name();
-    EXPECT_LT(strlen(name),5);        // Expect terminated string of head_name_len or less
+    EXPECT_LT(strlen(name),5u);        // Expect terminated string of head_name_len or less
 }
 
 /*

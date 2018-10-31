@@ -77,7 +77,7 @@ namespace mr_signals {
 
 
 Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,size_t num_sensors, size_t tx_buffer_size) :
-        send_gp_on_time_ms_(0), loconet_(loconet)
+        next_tx_time_ms_(0), send_gp_on_time_ms_(0), tx_errors_(0), loconet_(loconet)
 {
     if(num_sensors) {
         sensors_.reserve(num_sensors);
@@ -106,7 +106,7 @@ void Mrrwa_loconet_adapter::loop()
 {
     receive_loop();
 
-//    transmit_loop();
+    transmit_loop();
 
     send_global_power_on_loop();
 }
@@ -122,7 +122,7 @@ bool Mrrwa_loconet_adapter::send_opc_sw_req(Loconet_address address, bool thrown
 {
     lnMsg SendPacket ;
 
-    int sw2 = 0x00;
+    uint8_t sw2 = 0x00;
     if (!thrown) { sw2 |= OPC_SW_REQ_DIR; }
     if (on) { sw2 |= OPC_SW_REQ_OUT; }
     sw2 |= ((address-1) >> 7) & 0x0F;
@@ -131,9 +131,7 @@ bool Mrrwa_loconet_adapter::send_opc_sw_req(Loconet_address address, bool thrown
     SendPacket.data[ 1 ] = (address-1) & 0x7F ;
     SendPacket.data[ 2 ] = sw2 ;
 
-    tx_buffer_.queue_loconet_msg(SendPacket);
-
-    return true;
+    return(tx_buffer_.queue_loconet_msg(SendPacket));
 }
 
 
@@ -215,15 +213,17 @@ void Mrrwa_loconet_adapter::receive_loop()
 
 void Mrrwa_loconet_adapter::transmit_loop()
 {
-    static Runtime_ms next_tx_time_ms=0;
     lnMsg ln_msg;
 
-    if(get_time_ms() > next_tx_time_ms) {
+    if(get_time_ms() >= next_tx_time_ms_) {
 
         if(tx_buffer_.dequeue_loconet_msg(ln_msg)) {
 
-            (void) loconet_.send(&ln_msg);
+            if(LN_DONE != loconet_.send(&ln_msg)) {
+                tx_errors_++;
+            }
 
+            next_tx_time_ms_ = get_time_ms() + transmit_delay_ms_;
         }
     }
 }

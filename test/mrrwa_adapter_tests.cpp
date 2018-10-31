@@ -8,8 +8,10 @@
 
 #include <iostream>
 #include <cstring>
+#include <stdio.h>
 
 #include "mrrwa_loconet_adapter.h"
+#include "loconet_switch.h"
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -380,6 +382,172 @@ TEST(MrrwaAdapter,SensorDebug)
 
 }
 
+/*
+ * Matcher to test the LocoNet send() mock function
+ * Compares the first 3 bytes passed in the test with those passed to the
+ * send() mock function
+ */
+MATCHER_P(test_3_byte_send, bytes, "") {
+
+    uint8_t * dataToCheck = arg->data;
+
+    bool isMatch = (memcmp(dataToCheck, bytes, 3) == 0);
+
+/*
+    std::cout << "test_3_byte_send" << std::endl;
+
+    for(int i=0;i<3;i++) {
+//        std::cout <<  std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(bytes[i]) << ":" << static_cast<int>(dataToCheck[i]) << std::endl;
+        printf("%02X:%02X\n",bytes[i],dataToCheck[i]);
+    }
+*/
+    return isMatch;
+}
+
+/* Test the basics of using the loconet adapater send functions, and that
+ * the transmit loop pulls out enqueued messages
+ *
+ */
+TEST(MrrwaAdapter,TxLoopTest)
+{
+    const uint8_t tx_pin=2;
+    const std::size_t buffer_size = 8;
+    LocoNetMock loconet_mock;
+
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,0,buffer_size);
+
+    EXPECT_CALL(loconet_mock,init(tx_pin));
+    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
+
+    // Try to queue 3 messages.  With a buffer of 8, only two 3-byte long
+    // messsages (OPC_SW_REQ is 4, the CRC is not stored) can be
+    // enqueued
+    EXPECT_EQ(0u,loconet_adapter.get_buffer_high_watermark());
+    EXPECT_TRUE(loconet_adapter.send_opc_sw_req(0x123,true,true));
+    EXPECT_EQ(3u,loconet_adapter.get_buffer_high_watermark());
+    EXPECT_TRUE(loconet_adapter.send_opc_sw_req(0x123,true,false));
+    EXPECT_EQ(6u,loconet_adapter.get_buffer_high_watermark());
+    EXPECT_FALSE(loconet_adapter.send_opc_sw_req(0x123,false,true));
+    EXPECT_EQ(6u,loconet_adapter.get_buffer_high_watermark());
+
+
+    // Expected bytes for send_opc_sw_req(0x123,true,true)
+    uint8_t test_bytes[3] = { 0xB0, 0x22, 0x12 };
+
+    EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
+
+    set_millis(1);          // Set past 0 so that transmit_loop() will call send
+    loconet_adapter.loop(); // will call send()
+
+    loconet_adapter.loop(); // should not call send() as insufficient time has elapsed
+
+    // should be no send errors
+    EXPECT_EQ(0,loconet_adapter.get_tx_error_count());
+
+    set_millis(11);
+    test_bytes[2] = 0x02;   // Change the 2nd byte to reflect // Expected bytes for send_opc_sw_req(0x123,true,false)
+    EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_RETRY_ERROR)); // Set another 1 time
+    loconet_adapter.loop(); // will call send()
+
+    set_millis(20);
+    loconet_adapter.loop(); // should not call send() as insufficient time has elapsed
+
+    // High watermark should remain the same after all the dequeuing
+    EXPECT_EQ(6u,loconet_adapter.get_buffer_high_watermark());
+
+    // With one transmit error
+    EXPECT_EQ(1u,loconet_adapter.get_tx_error_count());
+}
+
+/*
+ * Test the Loconet_switch implementation
+ *
+ * When a switch direction is requested, a LocoNet message should be
+ * sent with the 'on' flag; then 80ms later the same should be sent
+ * with 'off'.
+ *
+ * If the switch direction is requested before the 'off' is sent (even
+ * if it is the same direction) this is then sent with 'on'
+ * and only one 'off' is sent (for the most recent switch direction)
+ */
+
+TEST(MrrwaAdapter,LocoNetSwitchTest)
+{
+    const uint8_t tx_pin=2;
+    const std::size_t buffer_size = 8;
+    LocoNetMock loconet_mock;
+
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,0,buffer_size);
+
+    Loconet_switch switch1(0x123,&loconet_adapter);
+
+    EXPECT_CALL(loconet_mock,init(tx_pin));
+    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
+    EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
+
+
+    uint8_t test_bytes[3] = { 0xB0, 0x22, 0x12 };   // OPC_SW_REQ Addr:0x123, thrown, on
+
+    EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
+
+    switch1.request_direction(Switch_direction::thrown);
+
+
+    set_millis(1);
+    switch1.loop();
+    loconet_adapter.loop();
+
+    test_bytes[2] = 0x02;   // Change the 2nd byte to reflect 'off'
+    EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
+
+    switch1.loop();
+    loconet_adapter.loop();
+
+    set_millis(79);         // Advance time, but not enough
+
+    switch1.loop();
+    loconet_adapter.loop();
+
+    set_millis(80);
+
+    switch1.loop(); // Now should call send() again
+    loconet_adapter.loop();
+
+    switch1.loop(); // Will not call it again
+    loconet_adapter.loop();
+
+
+    // Now call a ::closed after a ::throw, but before the 80ms passes
+    // A ::closed should get called with the 'off' argument
+    set_millis(200);
+
+    test_bytes[2] = 0x12;   // Change the 2nd byte to represent ::thrown, 'on'
+    EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
+
+    switch1.request_direction(Switch_direction::thrown);
+    switch1.loop();
+    loconet_adapter.loop();
+
+
+    set_millis(240);
+
+    test_bytes[2] = 0x32;   // Change the 2nd byte to represent ::closed, 'on'
+    EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
+    switch1.request_direction(Switch_direction::closed);
+    switch1.loop();
+    loconet_adapter.loop();
+
+
+    test_bytes[2] = 0x22;   // Change the 2nd byte to represent ::closed, 'off'
+    EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
+
+    set_millis(320);
+
+    switch1.loop(); // Now should call send() again
+    loconet_adapter.loop();
+
+}
 
 /////////////////////////// Mrrwa_loconet_tx_buffer tests ////////////////////
 

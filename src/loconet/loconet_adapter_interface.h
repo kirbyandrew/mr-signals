@@ -31,15 +31,25 @@ typedef uint32_t Runtime_ms;       // TODO: Surely a better things for this?
 class Loconet_adapter_interface
 {
 public:
-    // Allows passing the Arduino pins that are used for sending and receiving
+    /**
+     * Allows passing the Arduino pins that are used for sending and receiving
+     * @param tx_pin
+     * @param rx_pin
+     * @return
+     */
     virtual bool setup(int tx_pin, int rx_pin) = 0;
 
-    // General processing loop to be called within the main loop() function
+    /**
+     * General processing loop to be called within the main loop() function
+     */
     virtual void loop() = 0;
 
-    // Attach all loconet sensors to the loconet adapater so that the
-    // adapter can set their state as bus traffic is received and processed
-    // within the loop
+    /**
+     * Provides an interface to attach a loconet sensors to the loconet
+     * adapter so that the adapter can set their state as bus traffic
+     * is received and processed within the loop
+     * @param
+     */
     virtual void attach_sensor(Loconet_sensor *) = 0;
 
 
@@ -50,7 +60,8 @@ public:
      * @param on on/off argument for OpcSwReq
      * @return true if the command was successfully sent / queued
      *          false if the command was not sent and should be retried if needed
-     */virtual bool send_opc_sw_req(Loconet_address address, bool thrown, bool on) = 0;
+     */
+    virtual bool send_opc_sw_req(Loconet_address address, bool thrown, bool on) = 0;
 
     /**
      * Allow other objects to send the Global Power On message (typically to
@@ -62,7 +73,10 @@ public:
     virtual ~Loconet_adapter_interface() = default;
 
 
-protected:
+    /**
+     * Provides a consistent time base for elements to use
+     * @return
+     */
     virtual Runtime_ms get_time_ms() = 0;
 
 };

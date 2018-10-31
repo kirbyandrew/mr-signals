@@ -214,6 +214,24 @@ public:
      */
     void notify_sensors(uint16_t address, bool state) const;
 
+
+    /**
+     * Retrieve the transmit buffer high water mark
+     * @return The maximum occupancy of the transmit buffer
+     */
+    const std::size_t get_buffer_high_watermark() {
+        return tx_buffer_.loconet_tx_buffer_.high_watermark();
+    }
+
+    /**
+     * Retrieve the internal transmit error count
+     * @return
+     */
+    const uint16_t get_tx_error_count() {
+        return tx_errors_;
+    }
+
+
     /**
      * Prints the current state of the attached sensors
      */
@@ -232,12 +250,24 @@ private:
     /// Observer pattern; the adapter class is the subject, each sensor is an observer
     std::vector<Loconet_sensor*> sensors_;
 
+
+    Runtime_ms next_tx_time_ms_;    // Next time from get_time_ms() that the
+                                    // adapter will attempt to transmit a
+                                    // queued message
+
+
     Runtime_ms send_gp_on_time_ms_;  // Next time from get_time_ms() to send the Global Power On message
+
+    static const Runtime_ms transmit_delay_ms_ = 10;
 
     Mrrwa_loconet_tx_buffer tx_buffer_;
 
+    /// Count of transmit errors from the MRRWA library
+    uint16_t tx_errors_;
+
     /// Instance of the MRWWA Loconet Class used by the adapter
     LocoNetClass& loconet_;
+
 };
 
 
