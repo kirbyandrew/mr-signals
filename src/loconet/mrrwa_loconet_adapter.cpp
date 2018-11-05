@@ -63,8 +63,11 @@ void set_mrrwa_loconet_adapter(mr_signals::Mrrwa_loconet_adapter * const adapter
 void notifySensor(uint16_t Address, uint8_t State)
 {
 
+#ifdef ARDUINO
+    Serial << F("Sensor Msg: ") << Address << F(" - ") << (State ? F("Active") : F("Inactive")) << F("\n");
+#else
     Serial << F("Sensor Msg: ") << std::dec << Address << F(" - ") << (State ? F("Active") : F("Inactive")) << F("\n");
-
+#endif
     if(nullptr!= loconet_adapter) {
         loconet_adapter->notify_sensors((mr_signals::Loconet_address)Address, State ? true : false);
     }

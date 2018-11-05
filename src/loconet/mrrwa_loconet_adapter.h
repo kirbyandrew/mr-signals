@@ -11,7 +11,7 @@
 #include <vector>
 #include "loconet_adapter_interface.h"
 #include "loconet_sensor.h"
-#include "circular_buffer.h"
+#include "../base/circular_buffer.h"
 
 
 #ifdef ARDUINO

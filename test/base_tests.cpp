@@ -8,6 +8,7 @@
  */
 
 
+#include <quadln_switch_head.h>
 #include "gtest/gtest.h"
 
 
@@ -16,7 +17,6 @@
 #include "switch_interface.h"
 #include "single_switch_head.h"
 #include "double_switch_head.h"
-#include "quadln_s_head.h"
 #include "logic_collection.h"
 #include "ryg_logic.h"
 #include "helpers.h"

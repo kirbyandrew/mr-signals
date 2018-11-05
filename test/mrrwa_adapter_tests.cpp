@@ -673,5 +673,4 @@ TEST(MrrwaTxBuffer,Dequeue)
     EXPECT_EQ(buffer_size,tx_buffer.loconet_tx_buffer_.get_free());
 
     EXPECT_EQ(0,std::memcmp(&read_msg,&msg3,2));
-
 }

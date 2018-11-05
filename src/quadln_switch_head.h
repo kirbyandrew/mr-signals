@@ -5,8 +5,8 @@
  *      Author: ackpu
  */
 
-#ifndef SRC_QUADLN_S_HEAD_H_
-#define SRC_QUADLN_S_HEAD_H_
+#ifndef SRC_QUADLN_SWITCH_HEAD_H_
+#define SRC_QUADLN_SWITCH_HEAD_H_
 
 #include "base/head_interface.h"
 #include "sensor_interface.h"

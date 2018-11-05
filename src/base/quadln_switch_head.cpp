@@ -5,7 +5,7 @@
  *      Author: ackpu
  */
 
-#include "quadln_s_head.h"
+#include <quadln_switch_head.h>
 
 using namespace mr_signals;
 

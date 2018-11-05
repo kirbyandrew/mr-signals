@@ -8,7 +8,7 @@
 #ifndef SRC_LOCONET_LOCONET_SWITCH_H_
 #define SRC_LOCONET_LOCONET_SWITCH_H_
 
-#include "switch_interface.h"
+#include "../base/switch_interface.h"
 #include "loconet_adapter_interface.h"
 
 

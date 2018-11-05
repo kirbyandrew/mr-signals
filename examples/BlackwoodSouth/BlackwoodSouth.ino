@@ -2,6 +2,7 @@
 #include <sensor_interface.h>
 #include <single_switch_head.h>
 #include <double_switch_head.h>
+#include <quadln_switch_head.h>
 #include "base/switch_interface.h"
 #include <ryg_logic.h>
 #include <vector>
@@ -19,11 +20,17 @@ Test_switch sw1,sw2;
 Single_switch_head ss_head1("",sw1);
 Single_switch_head ss_head2("",sw2);
 Single_switch_head ss_head3("",sw2);
-/*
+
 Double_switch_head ds_head1("",sw1,sw2);
 Double_switch_head ds_head2("",sw1,sw2);
 Double_switch_head ds_head3("",sw1,sw2);
-*/
+Double_switch_head ds_head4("",sw1,sw2);
+
+Quadln_s_head quad_head1("",sw1,sw2);
+Quadln_s_head quad_head2("",sw1,sw2);
+Quadln_s_head quad_head3("",sw1,sw2);
+Quadln_s_head quad_head4("",sw1,sw2);
+
 
 Test_sensor lever_1;
 Test_sensor lever_2;

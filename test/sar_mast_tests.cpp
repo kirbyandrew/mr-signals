@@ -9,13 +9,13 @@
  *      Author: ackpu
  */
 
+#include <quadln_switch_head.h>
 #include <iostream>
 #include "gtest/gtest.h"
 
 #include "sensor_interface.h"
 #include "head_interface.h"
 #include "switch_interface.h"
-#include "quadln_s_head.h"
 #include "logic_collection.h"
 #include "ryg_logic.h"
 #include "helpers.h"
