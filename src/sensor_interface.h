@@ -33,10 +33,12 @@ public:
     /**
      * Obtain the state of the sensor
      * Only use if .is_indeterminate() == false
+     *
+     * The function is not const as derived classes use this function to
+     * change internal states when called
+     *
      * @return State of the sensor true/false =  active/inactive
      */
-    // TODO: This really should be a const function, but the Lever_with_pushkey class
-    // uses this function to change the internal states!
     virtual bool is_active()  = 0;
 
     /**

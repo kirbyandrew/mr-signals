@@ -34,7 +34,6 @@ enum class Switch_direction : uint8_t {
  * before sending out a command on the bus.
  *
  */
-//TODO: Should this include the switch direction state and setter/getters?
 class Switch_interface {
 public:
     virtual bool request_direction(const Switch_direction)=0;

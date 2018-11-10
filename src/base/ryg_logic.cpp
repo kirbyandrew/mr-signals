@@ -10,14 +10,6 @@
 
 using namespace mr_signals;
 
-// TODO: Where should the logic to control the heads go? Since the mast implements
-// the logic, can it be adapted for different types of output?
-// How would you add a 3 color and a 5 color head together?
-// If you specialize a different mast, can you reuse the same interlocking?
-
-// Ideally pass an algorithm with each head, but that's then another reference per head
-
-
 
 // TODO To test in Arduino
 // - cost of passing initializer list

@@ -40,8 +40,6 @@ inline Head_aspect operator++(Head_aspect& aspect,int)
  * whatever
  */
 
-// TODO: Is this strictly an interface?  it implements some things.  Abstract
-// class better?
 class Head_interface
 {
 public:
@@ -140,7 +138,11 @@ public:
     {
     }
 
-    bool request_outputs(Head_aspect) override { return false;}
+protected:
+    bool request_outputs(Head_aspect) override
+    {
+        return false;
+    }
 };
 
 /**

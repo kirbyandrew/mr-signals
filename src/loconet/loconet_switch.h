@@ -71,23 +71,6 @@ private:
 
     const Runtime_ms on_off_delay_timer_ms_=60;
 
-
-/*
-public:
-
-{
-    public:
-        LocoNetSwitch(const LoconetAddress address, LocoNetAdapterInterface *ln_adapter);
-        bool RequestDirection(SwitchDirection dir);
-        void Loop();
-
-    private:
-         LoconetAddress address_;
-         static LocoNetAdapterInterface* ln_adapter_;
-         long send_off_time_ms_;
-         SwitchDirection current_direction_;
-*/
-
 };
 
 

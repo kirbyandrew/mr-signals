@@ -15,8 +15,8 @@ namespace mr_signals {
 class Loconet_sensor;   // Forward declaration for use in Loconet_adapter_interface
 
 
-typedef uint16_t Loconet_address;   // TODO: Right format for new type?
-typedef uint32_t Runtime_ms;       // TODO: Surely a better things for this?
+typedef uint16_t Loconet_address;
+typedef uint32_t Runtime_ms;
 
 /**
  *  Interface class that defines all of the methods neccessary for mr_signals to
@@ -68,7 +68,8 @@ public:
      * trigger reporting of sensor states by Loconet devices
      * @return true if the command was successfully sent / queued
      *          false if the command was not sent and should be retried if needed
-     */virtual bool send_opc_gp_on()= 0;
+     */
+    virtual bool send_opc_gp_on()= 0;
 
     virtual ~Loconet_adapter_interface() = default;
 
@@ -77,7 +78,7 @@ public:
      * Provides a consistent time base for elements to use
      * @return
      */
-    virtual Runtime_ms get_time_ms() = 0;
+    virtual Runtime_ms get_time_ms() const = 0;
 
 };
 

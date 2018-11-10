@@ -65,9 +65,7 @@ public:
     bool dequeue_loconet_msg(lnMsg& msg);
 
 
-//private:
     Circular_buffer loconet_tx_buffer_;
-
 };
 
 
@@ -134,7 +132,6 @@ public:
      * @param sensor  Sensor which wishes to observe the adapter
      */
     void attach_sensor(Loconet_sensor* sensor) override;
-//    void DebugPrint();
 
     /**
      * Requests that a Switch Request Loconet message be queued
@@ -181,8 +178,7 @@ public:
      */
     size_t sensor_count();
 
-    // TODO: Why can't this be const?
-    /**
+     /**
      * Get an indication of time elapsed since system startup in units of
      * milliseconds
      *
@@ -190,7 +186,7 @@ public:
      *
      * @return
      */
-    Runtime_ms get_time_ms();
+     Runtime_ms get_time_ms() const override;
 
 //    void queue_loconet_msg(lnMsg *msg);
 

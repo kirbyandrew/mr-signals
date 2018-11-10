@@ -37,13 +37,13 @@ public:
     Double_switch_head(const char *name, Switch_interface& switch_1,
             Switch_interface& switch_2);
 
+    void loop() override;
+
+protected:
     /// Specialized output functionality
     bool request_outputs(const Head_aspect) override;
 
-    void loop() override;
 
-
-private:
     Switch_interface& switch_1_;
     Switch_interface& switch_2_;
 };

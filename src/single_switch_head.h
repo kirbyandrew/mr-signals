@@ -30,43 +30,16 @@ public:
     /// Initialize the head with a name and the output switch
     Single_switch_head(const char* name, Switch_interface& switch_1);
 
-    /// Specialized output functionality for the QuadLN_S
-    bool request_outputs(const Head_aspect) override;
-
     void loop() override;
 
-    // TODO: How to find all classes that don't have virtual destructors??  Why needed?
+protected:
+    /// Specialized output functionality
+    bool request_outputs(const Head_aspect) override;
 
-private:
     Switch_interface& switch_1_;
 };
 
 
-
-/**
- * Enhanced single switch signal head that requires another sensor be active
- * for the head to change to a non-red/dark aspect
- *
- * Example use is a Call-On head where the operator also needs to press a
- * pushkey for the signal to clear.
- *
- */
-/*
-class Single_switch_sensor_head : public Single_switch_head
-{
-public:
-    Single_switch_sensor_head(  const char *name,
-                                Switch_interface& switch_1,
-                                Sensor_interface& sensor);
-
-    bool request_aspect(const Head_aspect aspect) override;
-
-  //  void loop() override;
-
-private:
-    Sensor_interface& sensor_;
-};
-*/
 }
 
 

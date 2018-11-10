@@ -9,7 +9,7 @@
  *      Author: ackpu
  */
 
-#include <quadln_switch_head.h>
+#include <quadln_s_head.h>
 #include <iostream>
 #include "gtest/gtest.h"
 

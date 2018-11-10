@@ -5,14 +5,15 @@
  *      Author: ackpu
  */
 
-#include <quadln_switch_head.h>
+#include <quadln_s_head.h>
 
 using namespace mr_signals;
+
 
 Quadln_s_head::Quadln_s_head(const char* name,
         Switch_interface& switch_1,
         Switch_interface& midpoint_switch) :
-        Head_interface(name), switch_1_(switch_1), midpoint_switch_(midpoint_switch)
+        Double_switch_head(name, switch_1, midpoint_switch)
 {
 
 }
@@ -20,10 +21,10 @@ Quadln_s_head::Quadln_s_head(const char* name,
 /**
  * Set the end-point (green/yellow) switch before clearing the midpoint switch,
  * as the QuadLN_S starts travelling to the value of switch_1_ as soon as
- * the midpoint is released.
+ * the midpoint (switch_2_) is released.
  *
- * For yellow, just set the midpoint as it overrides switch_1_'s value in the
- * QuadLN_S
+ * For yellow, just set the midpoint (switch_2_) as it overrides switch_1_'
+ * s value in the QuadLN_S
  */
 bool Quadln_s_head::request_outputs(const Head_aspect aspect)
 {
@@ -33,17 +34,17 @@ bool Quadln_s_head::request_outputs(const Head_aspect aspect)
     switch (aspect) {
     case Head_aspect::green:
         if (true == switch_1_.request_direction(Switch_direction::thrown)) {
-            result = midpoint_switch_.request_direction(Switch_direction::closed);
+            result = switch_2_.request_direction(Switch_direction::closed);
         }
         break;
 
     case Head_aspect::yellow:
-        result = midpoint_switch_.request_direction(Switch_direction::thrown);
+        result = switch_2_.request_direction(Switch_direction::thrown);
         break;
 
     case Head_aspect::red:
         if (true == switch_1_.request_direction(Switch_direction::closed)) {
-            result = midpoint_switch_.request_direction(Switch_direction::closed);
+            result = switch_2_.request_direction(Switch_direction::closed);
         }
         break;
 
@@ -57,13 +58,5 @@ bool Quadln_s_head::request_outputs(const Head_aspect aspect)
 
     return result;
 }
-
-
-void Quadln_s_head::loop()
-{
-    switch_1_.loop();
-    midpoint_switch_.loop();
-}
-
 
 

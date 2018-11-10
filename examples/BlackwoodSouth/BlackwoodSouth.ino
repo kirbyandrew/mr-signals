@@ -2,7 +2,7 @@
 #include <sensor_interface.h>
 #include <single_switch_head.h>
 #include <double_switch_head.h>
-#include <quadln_switch_head.h>
+#include <quadln_s_head.h>
 #include "base/switch_interface.h"
 #include <ryg_logic.h>
 #include <vector>
@@ -26,11 +26,17 @@ Double_switch_head ds_head2("",sw1,sw2);
 Double_switch_head ds_head3("",sw1,sw2);
 Double_switch_head ds_head4("",sw1,sw2);
 
+
 Quadln_s_head quad_head1("",sw1,sw2);
 Quadln_s_head quad_head2("",sw1,sw2);
 Quadln_s_head quad_head3("",sw1,sw2);
 Quadln_s_head quad_head4("",sw1,sw2);
-
+#if 0
+Quadln_s_head2 quad_head11("",sw1,sw2);
+Quadln_s_head2 quad_head12("",sw1,sw2);
+Quadln_s_head2 quad_head13("",sw1,sw2);
+Quadln_s_head2 quad_head14("",sw1,sw2);
+#endif
 
 Test_sensor lever_1;
 Test_sensor lever_2;
@@ -57,7 +63,56 @@ int freeRam () {
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
+template <typename T>
+class Container {
 
+public:
+    void reserve(size_t size)
+    {
+        collection_.reserve(size);
+    }
+
+    size_t size()
+    {
+        return(collection_.size());
+    }
+
+    void attach(T *element)
+    {
+        collection_.push_back(element);
+    }
+
+protected:
+    std::vector<T*> collection_;
+};
+
+
+class Logic_if {
+public:
+//  Container<Logic_interface> logics_;
+
+  public:
+    void reserve(size_t size)
+    {
+        collection_.reserve(size);
+    }
+
+    size_t size()
+    {
+        return(collection_.size());
+    }
+
+    void attach(Logic_interface *element)
+    {
+        collection_.push_back(element);
+    }
+
+protected:
+    std::vector<Logic_interface*> collection_;
+
+};
+
+Logic_if logic;
 
 // TODO: Use an initializer list to add a bunch of ints to check how efficient the re-allocation is
 void setup() {

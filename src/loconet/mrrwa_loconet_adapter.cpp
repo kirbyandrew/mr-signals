@@ -68,6 +68,7 @@ void notifySensor(uint16_t Address, uint8_t State)
 #else
     Serial << F("Sensor Msg: ") << std::dec << Address << F(" - ") << (State ? F("Active") : F("Inactive")) << F("\n");
 #endif
+
     if(nullptr!= loconet_adapter) {
         loconet_adapter->notify_sensors((mr_signals::Loconet_address)Address, State ? true : false);
     }
@@ -89,7 +90,7 @@ Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,size_t num_se
     tx_buffer_.initialize(tx_buffer_size);
 }
 
-
+// TODO: Merge into the constructor
 bool Mrrwa_loconet_adapter::setup(int tx_pin, int rx_pin)
 {
     if (rx_pin) {}          // Not used in MRRWA LocoNet
@@ -144,7 +145,7 @@ bool Mrrwa_loconet_adapter::send_opc_gp_on()
 }
 
 
-Runtime_ms Mrrwa_loconet_adapter::get_time_ms()
+Runtime_ms Mrrwa_loconet_adapter::get_time_ms() const
 {
     return millis();
 }
@@ -182,14 +183,10 @@ void Mrrwa_loconet_adapter::receive_loop()
     lnMsg        *ln_packet;
 
     ln_packet = loconet_.receive();
-//    if (nullptr != ln_packet) {
 
-// TODO : Test this on both an Arduino and a PC!
-    if(ln_packet) {
+    if(nullptr != ln_packet) {
 
         Serial << F("LN RX : ");
-
-
 
         uint8_t msg_len = getLnMsgSize(ln_packet);
 
@@ -201,16 +198,11 @@ void Mrrwa_loconet_adapter::receive_loop()
                 Serial << F("0");
 
             Serial << HEX << unsigned(val) << " ";
-          //  Serial.print(val, HEX);
-          //  Serial.print(' ');
         }
 
-
-        // TODO: should the endl be an F()?
         Serial << endl;
 
         loconet_.processSwitchSensorMessage(ln_packet);
-
     }
 }
 

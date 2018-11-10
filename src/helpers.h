@@ -20,7 +20,6 @@ namespace mr_signals {
  * to show a red aspect when the head that it is protecting is red (in
  * basic RYG logic, this would result in a Yellow Aspect)
  */
-
 class Red_head_sensor : public Sensor_interface  {
 public:
     Red_head_sensor(Head_interface& head) : head_(head) {}
@@ -37,15 +36,16 @@ public:
         return false;
     }
 
-//    ~Red_head_sensor() {}
-
-
 private:
-Head_interface& head_;
+    Head_interface& head_;
 };
 
-// TODO : Is this needed?
 
+/**
+ * Sensor that returns active if an observed head has a specified aspect
+ *
+ * To be used when a simpler Red_head_sensor does not meet the need.
+ */
 class Head_aspect_sensor : public Sensor_interface  {
 public:
     Head_aspect_sensor(const Head_interface& head, const Head_aspect active_aspect) : head_(head),active_aspect_(active_aspect) {}
@@ -61,8 +61,6 @@ public:
     bool is_indeterminate() const override {
         return false;
     }
-
-//    ~Red_head_sensor() {}
 
 
 private:
