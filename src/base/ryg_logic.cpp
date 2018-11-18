@@ -16,19 +16,23 @@ using namespace mr_signals;
 // comparison of individual classes for 'head_logic' rather than masts that collect it
 
 
-Simple_ryg_logic::Simple_ryg_logic(Head_interface& head,
+Simple_ryg_logic::Simple_ryg_logic(Logic_collection& collection,
+        Head_interface& head,
         Head_interface& protected_head,
         std::initializer_list<Sensor_interface *> const & protected_sensors) :
         head_(head), protected_head_(&protected_head), protected_sensors_(
                 protected_sensors)
 {
+        collection.attach_logic_interface(this);
 }
 
-Simple_ryg_logic::Simple_ryg_logic(Head_interface& head,
+Simple_ryg_logic::Simple_ryg_logic(Logic_collection& collection,
+        Head_interface& head,
         std::initializer_list<Sensor_interface *> const & protected_sensors) :
         head_(head), protected_head_(nullptr), protected_sensors_(
                 protected_sensors)
 {
+    collection.attach_logic_interface(this);
 }
 
 /**
@@ -98,29 +102,34 @@ void Simple_ryg_logic::loop()
 
 
 
-Interlocked_ryg_logic::Interlocked_ryg_logic(Head_interface& head,
-        Head_interface& protected_head, Sensor_interface& lever,
+Interlocked_ryg_logic::Interlocked_ryg_logic(Logic_collection& collection,
+        Head_interface& head,
+        Head_interface& protected_head,
+        Sensor_interface& lever,
         std::initializer_list<Sensor_interface *> const & protected_sensors) :
-        Simple_ryg_logic(head, protected_head, protected_sensors),
+        Simple_ryg_logic(collection, head, protected_head, protected_sensors),
         lever_(lever), automated_lever_(nullptr)
 {
 }
 
 
-Interlocked_ryg_logic::Interlocked_ryg_logic(Head_interface& head,
-        Head_interface& protected_head, Sensor_interface& lever,
+Interlocked_ryg_logic::Interlocked_ryg_logic(Logic_collection& collection,
+        Head_interface& head,
+        Head_interface& protected_head,
+        Sensor_interface& lever,
         Sensor_interface& automated_lever,
         std::initializer_list<Sensor_interface *> const & protected_sensors) :
-        Simple_ryg_logic(head, protected_head, protected_sensors),
+        Simple_ryg_logic(collection, head, protected_head, protected_sensors),
         lever_(lever), automated_lever_(&automated_lever)
 {
 }
 
 
-Interlocked_ryg_logic::Interlocked_ryg_logic(Head_interface& head,
+Interlocked_ryg_logic::Interlocked_ryg_logic(Logic_collection& collection,
+        Head_interface& head,
         Sensor_interface& lever,
         std::initializer_list<Sensor_interface *> const & protected_sensors) :
-        Simple_ryg_logic(head, protected_sensors),
+        Simple_ryg_logic(collection, head, protected_sensors),
         lever_(lever), automated_lever_(nullptr)
 {
 }

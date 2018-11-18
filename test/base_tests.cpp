@@ -109,21 +109,28 @@ protected:
  * The Sensor should return inactive for all aspects of the associated head,
  * except red, where it should return active
  *
- * The sensor should not be indeterminate at all times
+ * When the aspect of the head is unknown, the sensor should return indeterminate
+ * Otherwise its indeterminate state will be false
  */
 TEST(Red_head_sensor_test,BasicStates)
 {
     Test_head head;
     Red_head_sensor sensor(head);
 
-    EXPECT_FALSE(sensor.is_indeterminate());
+    EXPECT_EQ(Head_aspect::unknown,head.get_aspect());
+    EXPECT_TRUE(sensor.is_indeterminate());
 
     // Loop through all aspects; the Red_head_sensor should return inactive for all
     // aspects other than ::red
     for(Head_aspect aspect=Head_aspect::unknown; aspect<Head_aspect::max_head_aspect;aspect++) {
         head.request_aspect(aspect);
 
-        EXPECT_FALSE(sensor.is_indeterminate());
+        if(Head_aspect::unknown == head.get_aspect()) {
+            EXPECT_TRUE(sensor.is_indeterminate());
+        }
+        else {
+            EXPECT_FALSE(sensor.is_indeterminate());
+        }
 
         if(Head_aspect::red == aspect){
             EXPECT_TRUE(sensor.is_active());
@@ -196,6 +203,62 @@ TEST(Lever_with_pushkey_test,BasicStates)
 }
 
 /*
+ * Test the basics of the Logic_Collection
+ *
+ * Ensure that the count of attached Logic interfaces is correct and that the
+ * loop function calls each logic's loop (through a change in the state of
+ * the head attached to the Logic)
+ */
+TEST(Logic_Collection,SizeAndLoop)
+{
+    const size_t num_logics = 3;
+
+    Logic_collection collection(num_logics);
+
+    Test_head heads[num_logics];
+    Test_head protected_head;
+
+    Active_sensor active_sensor;
+
+    // Create both types of Simple_ryg_logic that call collection.attach() in
+    // their constructor.  Assign all an active sensor to protect;
+    // this will force the state of each head to red when the logic's loop
+    // is called
+    Simple_ryg_logic logic_1(collection,heads[0],{&active_sensor });
+    Simple_ryg_logic logic_2(collection,heads[1],{&active_sensor });
+    Simple_ryg_logic logic_3(collection,heads[2],protected_head,{&active_sensor });
+
+    // Confirm that the heads start as unknown before the loop is called
+    for(size_t i=0;i<num_logics;i++) {
+        EXPECT_EQ(Head_aspect::unknown,heads[i].get_aspect());
+    }
+
+    // Check the number of logics, both directly and as recommended
+    // in an actual application
+    EXPECT_EQ(num_logics,collection.logic_count());
+    EXPECT_TRUE(collection.logic_count() <= num_logics);
+
+    // Run the collection loop; should call the loop of each logic
+    collection.loop();
+
+
+    // Confirm that all of the heads are now ::red, confirming that
+    // each logic's loop function has been called
+    for(size_t i=0;i<num_logics;i++) {
+        EXPECT_EQ(Head_aspect::red,heads[i].get_aspect());
+    }
+
+    // Add another logic; this will make the count grow above the
+    // size of the original dimensioning of the collection
+    Simple_ryg_logic logic_4(collection,heads[0],{&active_sensor });
+
+    // Check logic_count() again
+    EXPECT_EQ(num_logics+1,collection.logic_count());
+    EXPECT_FALSE(collection.logic_count() <= num_logics);
+
+}
+
+/*
  * Test an interlocking lever with a pushkey controlling a Call-On signal head
  *
  * Assuming that any protected sensors are inactive, the head should only clear
@@ -204,6 +267,7 @@ TEST(Lever_with_pushkey_test,BasicStates)
 
 TEST(Interlocked_ryg_test,CallOnButton)
 {
+    Logic_collection collection(1);
     Test_sensor lever_(true);       // Lever controlling the head
     Test_sensor push_key_(false);   // Push key for the interlocked head
     Test_sensor sensor_1_(false);   // Sensor the head is protecting
@@ -214,7 +278,7 @@ TEST(Interlocked_ryg_test,CallOnButton)
     Lever_with_pushkey interlocked_lever_(lever_,push_key_);
 
     // Interlocked lever logic
-    Interlocked_ryg_logic test_logic_(head_,interlocked_lever_,{ &sensor_1_ });
+    Interlocked_ryg_logic test_logic_(collection,head_,interlocked_lever_,{ &sensor_1_ });
 
 
     // If the lever is reversed but the pushkey isn't pressed,
@@ -278,13 +342,14 @@ TEST(Interlocked_ryg_test,CallOnButton)
 
 TEST(Interlocked_ryg_logic_test, AutomatedLever)
 {
+    Logic_collection collection_(1);
     Test_head head_;                        // The head under test
     Test_head protected_head_;              // Subsequent head that the head is protecting
     Test_sensor sensor_1_(false);           // Sensor the head is protecting
     Test_sensor lever_(false);              // Interlocking lever
     Test_sensor automated_lever_(false);    // Automated behaviour lever
 
-    Interlocked_ryg_logic test_logic_(head_, protected_head_, lever_,
+    Interlocked_ryg_logic test_logic_(collection_, head_, protected_head_, lever_,
             automated_lever_, { &sensor_1_ });
 
     // If the lever isn't reversed, the head should go red
@@ -363,12 +428,13 @@ TEST(Interlocked_ryg_logic_test, AutomatedLever)
 
 TEST(Interlocked_ryg_logic_test, BasicInterlocking)
 {
+    Logic_collection collection_(1);
     Test_head head_;
     Test_head protected_head_;
     Sensor_base sensor_1_;
     Sensor_base lever_;
 
-    Interlocked_ryg_logic test_logic_(head_,protected_head_,lever_,{&sensor_1_});
+    Interlocked_ryg_logic test_logic_(collection_, head_,protected_head_,lever_,{&sensor_1_});
 
 
     protected_head_.request_aspect(Head_aspect::green);
@@ -437,11 +503,12 @@ TEST(Interlocked_ryg_logic_test, BasicInterlocking)
 
 TEST(Simple_ryg_logic_test, ProtectHeadAndSensor)
 {
+    Logic_collection collection_(1);
     Test_head head_;                // Head the protects the following head and sensor
     Test_head protected_head_;      // The head that is protected by head_
     Sensor_base sensor_1_;          // The sensor that is protected by head_
 
-    Simple_ryg_logic test_mast_(head_,protected_head_,{&sensor_1_});
+    Simple_ryg_logic test_mast_(collection_,head_,protected_head_,{&sensor_1_});
 
     // Test defaults
     EXPECT_EQ(Head_aspect::unknown, head_.get_aspect());
@@ -490,11 +557,12 @@ TEST(Simple_ryg_logic_test, ProtectHeadAndSensor)
  */
 TEST(Simple_ryg_logic_test, Protect2SensorsOnly)
 {
+    Logic_collection collection_(1);
     Test_head head_;
     Sensor_base sensor_1_;
     Sensor_base sensor_2_;
 
-    Simple_ryg_logic test_mast_(head_,{&sensor_1_,&sensor_2_});
+    Simple_ryg_logic test_mast_(collection_, head_,{&sensor_1_,&sensor_2_});
 
 
     // While sensor is indeterminate, the head aspect won't change
@@ -532,10 +600,11 @@ TEST(Simple_ryg_logic_test, Protect2SensorsOnly)
  */
 TEST(Simple_ryg_logic_test, Protect1SensorsOnly)
 {
+    Logic_collection collection_(1);
     Test_head head_;
     Sensor_base sensor_1_;
 
-    Simple_ryg_logic test_mast_(head_,{&sensor_1_});
+    Simple_ryg_logic test_mast_(collection_, head_,{&sensor_1_});
 
 
     // While sensor is indeterminate, the head aspect won't change
@@ -565,8 +634,9 @@ TEST(Simple_ryg_logic_test, Protect1SensorsOnly)
 
 TEST(Interlocked_ryg_logic_test, NoProtection)
 {
+    Logic_collection collection_(1);
     Test_head head_;
-    Simple_ryg_logic test_mast_(head_,{});
+    Simple_ryg_logic test_mast_(collection_, head_, {});
 
     // With just a head attached, it should just go and stay Head_aspect::green
     EXPECT_EQ(Head_aspect::unknown, head_.get_aspect());

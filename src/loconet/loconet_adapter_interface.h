@@ -31,13 +31,6 @@ typedef uint32_t Runtime_ms;
 class Loconet_adapter_interface
 {
 public:
-    /**
-     * Allows passing the Arduino pins that are used for sending and receiving
-     * @param tx_pin
-     * @param rx_pin
-     * @return
-     */
-    virtual bool setup(int tx_pin, int rx_pin) = 0;
 
     /**
      * General processing loop to be called within the main loop() function

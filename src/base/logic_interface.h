@@ -26,9 +26,11 @@ namespace mr_signals {
 // TODO: Update Logic collection interface to dimension the size of the collection
 class Logic_interface {
 public:
+
     virtual void loop() = 0;
 
     virtual ~Logic_interface () = default;
+
 };
 
 

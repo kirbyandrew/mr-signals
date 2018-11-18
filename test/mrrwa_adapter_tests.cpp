@@ -73,19 +73,15 @@ TEST(MrrwaAdapter,BasicMappingCalls)
     const uint8_t tx_pin=2;
     LocoNetMock loconet_mock;
 
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock);
-
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
-
-    // Test the basic expected
     init_millis();
-
     EXPECT_CALL(loconet_mock,init(tx_pin));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+
+    // Test the basic expected calls
+
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(loconet_mock,reportPower(1)).WillOnce(Return(LN_DONE));
 
-    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
 
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
 
@@ -106,16 +102,13 @@ TEST(MrrwaAdapter,InitRetries)
     const uint8_t tx_pin=2;
     LocoNetMock loconet_mock;
 
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock);
-
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
-
 
     init_millis();
 
-
     EXPECT_CALL(loconet_mock,init(tx_pin));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+
+
 
     // Setup so that the first call to reportPower fails, then the next succeeds
     EXPECT_CALL(loconet_mock,reportPower(1))
@@ -124,8 +117,6 @@ TEST(MrrwaAdapter,InitRetries)
 
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
 
-
-    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
 
 
     // Run for long enough to allo the reportPower(1) be called twice
@@ -145,16 +136,11 @@ TEST(MrrwaAdapter,NoMsgsReceivedLoopTest)
     const uint8_t tx_pin=2;
     LocoNetMock loconet_mock;
 
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock);
-
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
-
-
     init_millis();
-
     EXPECT_CALL(loconet_mock,init(tx_pin));
-    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+
+
 
     EXPECT_CALL(loconet_mock,receive()).WillOnce(Return(nullptr));
     EXPECT_CALL(loconet_mock,processSwitchSensorMessage(_)).Times(0);
@@ -173,16 +159,11 @@ TEST(MrrwaAdapter,MsgReceivedLoopTest)
     const int cycles = 5;       // Some number of loops to run
     LocoNetMock loconet_mock;
 
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock);
-
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
+    EXPECT_CALL(loconet_mock,init(tx_pin));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
 
 
     init_millis();
-
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
 
     lnMsg msg;
 
@@ -214,16 +195,11 @@ TEST(MrrwaAdapter,ReceivedDebugTest)
     const uint8_t tx_pin=2;
     LocoNetMock loconet_mock;
 
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock);
-
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
+    EXPECT_CALL(loconet_mock,init(tx_pin));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
 
     // Attach one sensor, ID 50
     Loconet_sensor sensor1("Sen1",50,loconet_adapter);
-
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
 
     lnMsg msg;
 
@@ -288,10 +264,8 @@ TEST(MrrwaAdapter,AttachingSensors)
     int const sensor_count = 2;
 
     // Create an adapter object, dimension it to hold 2 sensors
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,sensor_count);
-
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
+    EXPECT_CALL(loconet_mock,init(tx_pin));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,sensor_count);
 
 
     // With no sensors attached, the count should be 0
@@ -308,21 +282,15 @@ TEST(MrrwaAdapter,AttachingSensors)
     Loconet_sensor sensor72("S72",72,loconet_adapter);
     EXPECT_EQ((size_t)3,loconet_adapter.sensor_count());
 
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
-
 
     lnMsg msg;
 
 
     // Load up the mocks
-    EXPECT_CALL(loconet_mock,init(tx_pin));
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(&msg));
     EXPECT_CALL(loconet_mock,processSwitchSensorMessage(_)).Times(3);
     ON_CALL(loconet_mock,processSwitchSensorMessage(_)).WillByDefault(testing::Invoke(procSwitchSensorMessage));
 
-    // Init
-    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
 
     // All sensors should be inactive at this point
     EXPECT_FALSE(sensor50.is_active());
@@ -390,10 +358,6 @@ TEST(MrrwaAdapter,SensorDebug)
     // Create an adapter object, dimension it to hold 2 sensors
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,sensor_count);
 
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
-
-
     Loconet_sensor sensor1("Sensor1",1,loconet_adapter);    // Ensure the constrained name string prints correctly
     Loconet_sensor sensor2("S2",2,loconet_adapter);
     Loconet_sensor sensor3("S0003",3,loconet_adapter);
@@ -448,13 +412,8 @@ TEST(MrrwaAdapter,TxLoopTest)
     const std::size_t buffer_size = 8;
     LocoNetMock loconet_mock;
 
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,0,buffer_size);
-
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
-
     EXPECT_CALL(loconet_mock,init(tx_pin));
-    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,0,buffer_size);
 
     // Try to queue 3 messages.  With a buffer of 8, only two 3-byte long
     // messsages (OPC_SW_REQ is 4, the CRC is not stored) can be
@@ -515,16 +474,12 @@ TEST(MrrwaAdapter,LocoNetSwitchTest)
     const std::size_t buffer_size = 8;
     LocoNetMock loconet_mock;
 
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,0,buffer_size);
-
-    // Set the adapter so that the C callbacks from the MRRWA library can find it
-    set_mrrwa_loconet_adapter(&loconet_adapter);
+    EXPECT_CALL(loconet_mock,init(tx_pin));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,0,buffer_size);
 
     Loconet_switch switch1(0x123,&loconet_adapter);
 
 
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    EXPECT_TRUE(loconet_adapter.setup(tx_pin,0));
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
 
 

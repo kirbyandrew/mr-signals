@@ -8,23 +8,52 @@
 #ifndef SRC_LOGIC_COLLECTION_H_
 #define SRC_LOGIC_COLLECTION_H_
 
-#include <vector>
-#include <initializer_list>
+#include <vector>   // std::vector<>
+#include <cstddef>  // size_t
 #include "base/logic_interface.h"
 
 namespace mr_signals {
 
+
+/// Forward declaration for Logic_collection::attach_logic_interface()
+class Logic_interface;
+
+
 class Logic_collection {
 
 public:
-    /// All logic objects must be passed at construction;
-    /// Ensures fully initialized object, and eliminates memory loss through
-    /// continually growing the storage ::vector if they were passed in one at
-    /// a time
-    Logic_collection(std::initializer_list<Logic_interface *> const & logic_functions) :
-        logic_functions_(logic_functions)
+    /// Dimension the storage at construction so that the storage ::vector
+    /// does not continue to inefficiently grow.
+    /// A reference to the Logic_Collection is passed to each Logic_interface
+    /// so that the interface can be attached to the collection.
+    Logic_collection(size_t num_logic_interfaces)
     {
+        logic_functions_.reserve(num_logic_interfaces);
     }
+
+    /**
+     * Attaches an instace of a Logic interface to the logic collection
+     * Normally called by the Logic_interface collector
+     * @param interface
+     */
+    void attach_logic_interface(Logic_interface *interface)
+    {
+        logic_functions_.push_back(interface);
+    }
+
+    /**
+     * Get the number of logic_functions that are attached to the
+     * collection.  This is to be used to compare the final size
+     * of the collection to the size that was dimensioned in the
+     * constructor.
+     *
+     * @return
+     */
+    size_t logic_count()
+    {
+        return logic_functions_.size();
+    }
+
 
     /// To be called in the main Arduino loop() so that the logic functions
     /// are periodically run

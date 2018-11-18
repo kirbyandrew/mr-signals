@@ -99,19 +99,12 @@ public:
      *
      * Mrrwa_loconet_adapter loconet_adpater(loconet,50);
      *
-     * @param loconet       Reference to the MRWWA object in use
-     * @param num_sensors   Pre-initialize the list of sensors
+     * @param loconet           Reference to the MRWWA object in use
+     * @param tx_pin            Arduino transmit pin
+     * @param num_sensors       Pre-initialize the list of sensors
+     * @param tx_buffer_size    Set the transmit buffer queue size
      */
-    Mrrwa_loconet_adapter(LocoNetClass& loconet, size_t num_sensors=0, size_t tx_buffer_size=100);
-
-    /**
-     * Perform all setup functions required for the MRWAA Loconet class
-     *
-     * @param tx_pin    Arduino transmit pin
-     * @param rx_pin    Arduino receive pin
-     * @return          true indicates success, false that some error occured
-     */
-    bool setup(int tx_pin, int rx_pin) override;
+    Mrrwa_loconet_adapter(LocoNetClass& loconet, int tx_pin=2, size_t num_sensors=0, size_t tx_buffer_size=100);
 
 
     /**
@@ -266,29 +259,7 @@ private:
 
 };
 
-
-/*
- * TODO: add timer stuff
- * constexpr std::chrono::milliseconds operator ""ms(unsigned long long ms)
-{
-    return chrono::milliseconds(ms);
-}
-constexpr std::chrono::duration<long double, std::milli> operator ""ms(long double ms)
-{
-    return std::chrono::duration<long double, std::milli>(ms);
-}
- */
-
 }
 
-
-
-
-/**
- * Unfortunate set function to provide a reference to the adapter for use by C
- * functions in the .cpp file that are required by the MRRWA package
- * @param adapter
- */
-void set_mrrwa_loconet_adapter(mr_signals::Mrrwa_loconet_adapter * const adapter);
 
 #endif /* SRC_LOCONET_MRRWA_LOCONET_ADAPTER_H_ */

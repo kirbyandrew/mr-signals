@@ -97,22 +97,21 @@ TEST(SarSpeedSignal,BasicStates)
     Fixed_red_head h_red;
     Red_head_sensor h_1b_red(h_1b);
 
-    Simple_ryg_logic l_1107a(h_1107a,h_1a,{&t_1107});
-    Simple_ryg_logic l_1107b(h_1107b,h_1b,{&t_1107, &h_1b_red});
+    Logic_collection logic_collection(6);
+
+    Simple_ryg_logic l_1107a(logic_collection,h_1107a,h_1a,{&t_1107});
+    Simple_ryg_logic l_1107b(logic_collection,h_1107b,h_1b,{&t_1107, &h_1b_red});
 
 
-    Interlocked_ryg_logic l_1a(h_1a,h_22a,lever_1, auto_lever, {&t_1,&switch_6});
-    Interlocked_ryg_logic l_1b(h_1b,h_red,lever_1, {&t_1,&switch_6_inv,&switch_8});
-    Interlocked_ryg_logic l_1c(h_1c,lever_1c,  {&t_1,&switch_6});
+    Interlocked_ryg_logic l_1a(logic_collection,h_1a,h_22a,lever_1, auto_lever, {&t_1,&switch_6});
+    Interlocked_ryg_logic l_1b(logic_collection,h_1b,h_red,lever_1, {&t_1,&switch_6_inv,&switch_8});
+    Interlocked_ryg_logic l_1c(logic_collection,h_1c,lever_1c,  {&t_1,&switch_6});
 
-    Interlocked_ryg_logic l_22a(h_22a,h_red, lever_22, auto_lever,{&t_22});
+    Interlocked_ryg_logic l_22a(logic_collection,h_22a,h_red, lever_22, auto_lever,{&t_22});
 
 
-    Logic_collection logic_collection({&l_1a,&l_1b,&l_1c,&l_22a,&l_1107a,&l_1107b});
 
-//    Mast_aspects_container mast_container(3, sar_speed_masts);
     Mast_aspects_container mast_container(sar_speed_masts);
-//    Mast_aspects_container mast_container;
 
     EXPECT_TRUE(mast_container.check_configuration());
 
@@ -120,6 +119,7 @@ TEST(SarSpeedSignal,BasicStates)
     mast_container.add_mast({&h_1107a,&h_1107b});
 
 
+    logic_collection.loop();
     logic_collection.loop();
 
     mast_container.dump_mast_states();
@@ -136,6 +136,8 @@ TEST(SarSpeedSignal,BasicStates)
     switch_6.set_state(true);
 
     logic_collection.loop();
+    logic_collection.loop();
+
 
     mast_container.dump_mast_states();
 
@@ -143,8 +145,12 @@ TEST(SarSpeedSignal,BasicStates)
 
     lever_1.set_state(false);
     logic_collection.loop();
+    logic_collection.loop();
+
     lever_1.set_state(true);
     logic_collection.loop();
+    logic_collection.loop();
+
 
     EXPECT_TRUE(mast_container.check_mast_sequence(caution_medium_speed));
     mast_container.dump_mast_states();

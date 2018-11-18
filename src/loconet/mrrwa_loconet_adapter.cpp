@@ -18,26 +18,6 @@
 
 
 
-
-/*
- * Bitmask for inserting transmit delays in the LN tx buffer which otherwise
- * uses raw LocoNet messages with the length and function using the LN OPC.
- *
- * It fits into an unused bit in the OPCs that are added to the LN tx buffer
- * for all except the Write Slot Data, which just needs to be checked before
- * checking for the Delay message
- *
- * 8x  1xxx xxxx       Power OPCs (not added to LN tx buffer)
- * Ax  1010 xxxx       Loco OPCs  (not used)
- * Bx  1011 xxxx       Most OPCs (used)
- * Ex  1110 xxxx       System OPCs (only EF may be used)
- * EF  1110 1111       Write Slot Data (OPC_WR_SL_DATA)
- */
-
-
-//#define NON_LN_DELAY_MSG 0x40
-//#define NON_LN_DELAY_MASK 0x3F
-
 /*
  *
  * Global required to get a local instance of the adapter so that
@@ -47,9 +27,14 @@
  * This is all declared outside of the usual mr_signals scope so that the linker
  * finds it for the MRRWA library
  */
-
 static const mr_signals::Mrrwa_loconet_adapter* loconet_adapter=nullptr;
 
+
+/**
+ * Set function to provide a reference to the adapter for use by C
+ * functions in the .cpp file that are required by the MRRWA package
+ * @param adapter
+ */
 void set_mrrwa_loconet_adapter(mr_signals::Mrrwa_loconet_adapter * const adapter)
 {
     loconet_adapter = adapter;
@@ -80,7 +65,7 @@ void notifySensor(uint16_t Address, uint8_t State)
 namespace mr_signals {
 
 
-Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,size_t num_sensors, size_t tx_buffer_size) :
+Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
         next_tx_time_ms_(0), send_gp_on_time_ms_(0), tx_errors_(0), loconet_(loconet)
 {
     if(num_sensors) {
@@ -88,21 +73,13 @@ Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,size_t num_se
     }
 
     tx_buffer_.initialize(tx_buffer_size);
-}
 
-// TODO: Merge into the constructor
-bool Mrrwa_loconet_adapter::setup(int tx_pin, int rx_pin)
-{
-    if (rx_pin) {}          // Not used in MRRWA LocoNet
+    // Register the adapter with the pointer used by the MRRWA callbacks
+    ::set_mrrwa_loconet_adapter(this);
+
     loconet_.init(tx_pin);
 
-
     send_gp_on_time_ms_ = get_time_ms() + POWER_ON_DELAY_MS;
-
-    //     init_queue(&ln_tx_queue);
-
-
-    return true;    // No return from MRRWA Loconet .init function, always return true here
 }
 
 

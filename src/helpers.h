@@ -33,7 +33,12 @@ public:
     }
 
     bool is_indeterminate() const override {
-        return false;
+        if(Head_aspect::unknown == head_.get_aspect()) {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
 private:

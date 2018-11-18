@@ -14,6 +14,7 @@
 #include "base/logic_interface.h"
 #include "base/head_interface.h"
 #include "sensor_interface.h"
+#include "logic_collection.h"
 
 
 
@@ -22,12 +23,14 @@ namespace mr_signals {
 class Simple_ryg_logic : public Logic_interface
 {
 public:
-    Simple_ryg_logic(Head_interface& head,
-            Head_interface& protected_head,
-            std::initializer_list<Sensor_interface *> const & protected_sensors);
+    Simple_ryg_logic(   Logic_collection& collection,
+                        Head_interface& head,
+                        Head_interface& protected_head,
+                        std::initializer_list<Sensor_interface *> const & protected_sensors);
 
-    Simple_ryg_logic(Head_interface& head,
-            std::initializer_list<Sensor_interface *> const & protected_sensors);
+    Simple_ryg_logic(   Logic_collection& collection,
+                        Head_interface& head,
+                        std::initializer_list<Sensor_interface *> const & protected_sensors);
 
     void loop() override;
 
@@ -45,24 +48,27 @@ class Interlocked_ryg_logic : public Simple_ryg_logic
 public:
     // Head, protected head, interlocking lever and protected sensors
     // No automated lever
-    Interlocked_ryg_logic(Head_interface& head,
-            Head_interface& protected_head,
-            Sensor_interface& lever,
-            std::initializer_list<Sensor_interface *> const & protected_sensors);
+    Interlocked_ryg_logic(  Logic_collection& collection,
+                            Head_interface& head,
+                            Head_interface& protected_head,
+                            Sensor_interface& lever,
+                            std::initializer_list<Sensor_interface *> const & protected_sensors);
 
     // Head, protected head, interlocking lever, automated lever and
     // protected sensors
-    Interlocked_ryg_logic(Head_interface& head,
-            Head_interface& protected_head,
-            Sensor_interface& lever,
-            Sensor_interface& automated_lever,
-            std::initializer_list<Sensor_interface *> const & protected_sensors);
+    Interlocked_ryg_logic(  Logic_collection& collection,
+                            Head_interface& head,
+                            Head_interface& protected_head,
+                            Sensor_interface& lever,
+                            Sensor_interface& automated_lever,
+                            std::initializer_list<Sensor_interface *> const & protected_sensors);
 
     // Head, interlocking lever and protected sensors
     // No protected head or automated lever
-    Interlocked_ryg_logic(Head_interface& head,
-            Sensor_interface& lever,
-            std::initializer_list<Sensor_interface *> const & protected_sensors);
+    Interlocked_ryg_logic(  Logic_collection& collection,
+                            Head_interface& head,
+                            Sensor_interface& lever,
+                            std::initializer_list<Sensor_interface *> const & protected_sensors);
 
     void loop() override;
 
