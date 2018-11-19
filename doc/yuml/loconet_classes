@@ -1,0 +1,2 @@
+[Sensor_base]^-[Loconet_sensor|-name : string;-address_ : Loconet_address|+notify(address state) : bool;+get_address() : Loconet_address;+get_name : string],
+[Switch_interface]^-[Loconet_switch|-ln_adapter_:Loconet_adapter_interface;address_:Loconet_address;-send_off_time_ms_:Runtime_ms;current_direction_:Switch_direction|+request_direction(direction):bool;+loop()]

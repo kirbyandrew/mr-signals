@@ -22,8 +22,6 @@ namespace mr_signals {
  *
  */
 
-// TODO: Add protected constructor that must be called by derived class to take logic_collection
-// TODO: Update Logic collection interface to dimension the size of the collection
 class Logic_interface {
 public:
 

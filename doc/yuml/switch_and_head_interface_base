@@ -1,0 +1,6 @@
+[Switch_interface||+request_direction()=0;+loop()=0],
+[Head_interface|-name_ : String;-aspect_ : Enum;-held : Bool|+request_aspect(:Head_aspect);+loop()=0;+get_aspect() : Head_aspect;+get_name() : String; +set_held(:Bool); +is_held() : Bool; #set_aspect(:Head_aspect); #request_outputs(:Head_aspect) = 0],
+[Head_Interface]^-[Single_switch_head|#switch_1_ : Switch_interface|+loop();#request_outputs()],
+[Head_Interface]^-[Double_switch_head|#switch_1_: Switch_interface;#switch_2_ : Switch_interface|+loop();#request_outputs();],
+[Double_switch_head]^-[Quadln_s_head||#request_outputs()],
+[Head_Interface]^-[Red_head||+get_aspect():red;+request_aspect();+loop();#request_outputs()],

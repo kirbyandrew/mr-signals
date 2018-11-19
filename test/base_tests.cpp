@@ -20,6 +20,8 @@
 #include "logic_collection.h"
 #include "ryg_logic.h"
 #include "helpers.h"
+#include "pin_sensor.h"
+#include "triple_pin_head.h"
 
 using namespace mr_signals;
 
@@ -1226,4 +1228,8 @@ TEST(Active_sensor_test, IsEmptyInitially) {
 
 }
 
+TEST(Pin_sensor,base) {
+    Pin_sensor sensor_1(2);
+    Triple_pin_head head_1("Head1",1,2,3);
+}
 

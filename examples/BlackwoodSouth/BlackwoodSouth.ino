@@ -3,14 +3,28 @@
 #include <single_switch_head.h>
 #include <double_switch_head.h>
 #include <quadln_s_head.h>
+#include <logic_collection.h>
 #include "base/switch_interface.h"
 #include <ryg_logic.h>
 #include <vector>
 #include <mr_signals.h>   // Print()
+#include <LocoNet.h>
 
 #include "loconet/mrrwa_loconet_adapter.h"
 
 using namespace mr_signals;
+
+const size_t num_logic_interfaces = 5;
+
+Logic_collection logic_collection(num_logic_interfaces);
+
+
+const int tx_pin = 42;
+const size_t num_sensors = 10;
+const size_t tx_buffer_size = 6;
+
+Mrrwa_loconet_adapter loconet_adapter(LocoNet, tx_pin, num_sensors, tx_buffer_size);
+
 
 Active_sensor active_sensor;
 Sensor_base s1,s2,s3;
@@ -51,8 +65,9 @@ Sensor_interlocked_head logical_head_2(head_2,push_key);
 Interlocked_ryg_logic test_logic_2(logical_head_2,lever_2,{ &s1});
 */
 
+
 Lever_with_pushkey interlocked_lever_1(lever_1,push_key);
-Interlocked_ryg_logic test_logic_1(head_1,interlocked_lever_1,{ &s1 });
+Interlocked_ryg_logic test_logic_1(logic_collection, head_1,interlocked_lever_1,{ &s1 });
 
 Lever_with_pushkey interlocked_lever_2(lever_2,push_key);
 //Interlocked_ryg_logic test_logic_2(head_2,interlocked_lever_2,{ &s1 });
@@ -126,7 +141,7 @@ void setup() {
   
   Serial << "mr_signals test" << "\r\n";
 
-  Serial.println("Blackwood Tower");
+  Serial.println(F("Blackwood Tower"));
   Serial.write("free RAM : ");
   Serial.println(freeRam());
 

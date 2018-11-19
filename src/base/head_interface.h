@@ -96,7 +96,7 @@ protected:
      *                  false = The output could not be set or and invalid
      *                          aspect was requested
      */
-    virtual bool request_outputs(Head_aspect aspect) = 0;
+    virtual bool request_outputs(Head_aspect aspect);
 
 private:
     static const int head_name_len = 5;

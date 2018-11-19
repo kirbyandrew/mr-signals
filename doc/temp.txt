@@ -1,0 +1,121 @@
+
+Setup
+- List packages
+
+#include <StandardCplusplus.h>
+- What was edited?
+
+
+Logic Collection
+
+
+  Head1 ====[Sensor1]====> Head2 ====[Sensor 2]====> Head3 ====[Sensor 3]====> 
+
+
+  Head1 ====[Sensor1]====> Head2 ====[Sensor 2]====> Head3 ====[Sensor 3]====> 
+ (Green)    (Inactive)    (Green)    (Inactive)     (Green)    (Inactive)
+ 
+ 
+         [---Train--->] 
+  Head1 ====[Sensor1]====> Head2 ====[Sensor 2]====> Head3 ====[Sensor 3]====> 
+  (Red)      (Active)     (Green)    (Inactive)     (Green)    (Inactive)
+
+  
+  
+                      [---Train--->] 
+  Head1 ====[Sensor1]====> Head2 ====[Sensor 2]====> Head3 ====[Sensor 3]====> 
+  (Red)      (Active)      (Red)      (Active)       (Green)   (Inactive)
+  
+  
+                                   [---Train--->] 
+  Head1 ====[Sensor1]====> Head2 ====[Sensor 2]====> Head3 ====[Sensor 3]====> 
+ (Yellow)   (Inactive)     (Red)      (Active)      (Green)    (Inactive)
+  
+  
+                                                              [---Train--->] 
+  Head1 ====[Sensor1]====> Head2 ====[Sensor 2]====> Head3 ====[Sensor 3]====> 
+ (Green)    (Inactive)    (Yellow)   (Inactive)      (Red)      (Active)
+  
+  
+We will need three heads and their corresponding logic interfaces.
+
+
+#include <StandardCplusplus.h>
+#include <double_switch_head.h>
+#include <ryg_logic.h>
+#include <LocoNet.h>
+#include "loconet/mrrwa_loconet_adapter.h"
+#include <mr_signals.h>   
+
+
+const size_t num_logic_interfaces = 3;    
+    
+Logic_collection logic_collection(num_logic_interfaces);
+
+
+const int tx_pin = 42;
+const size_t num_sensors = 3;
+const size_t tx_buffer_size = 6;
+
+Mrrwa_loconet_adapter loconet_adapter(LocoNet, tx_pin, num_sensors, tx_buffer_size);
+
+
+Loconet_sensor sensor_1("Sen1",1,loconet_adapter);
+Loconet_sensor sensor_2("Sen2",1,loconet_adapter);
+Loconet_sensor sensor_3("Sen3",1,loconet_adapter);
+
+Loconet_switch head_1_sw1(101,loconet_adapter);
+Loconet_switch head_1_sw2(102,loconet_adapter);
+Loconet_switch head_2_sw1(103,loconet_adapter);
+Loconet_switch head_2_sw2(104,loconet_adapter);
+Loconet_switch head_3_sw1(105,loconet_adapter);
+Loconet_switch head_3_sw2(106,loconet_adapter);
+
+
+Double_switch_head head_1("Head1",head_1_sw1,head_1_sw2);
+Double_switch_head head_2("Head2",head_2_sw1,head_2_sw2);
+Double_switch_head head_3("Head3",head_3_sw1,head_3_sw2);
+
+
+Simple_ryg_logic logic_1(logic_collection, head_1, head_2, {&sensor_1});
+Simple_ryg_logic logic_2(logic_collection, head_2, head_3, {&sensor_2});
+Simple_ryg_logic logic_3(logic_collection, head_3,         {&sensor_3});
+
+
+int freeRam () {
+  extern int __heap_start, *__brkval;
+  int v;
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+}
+
+void setup(void) {
+
+  Serial.begin(57600);
+  Serial.println("mr-signals-demo1");
+  Serial.write("free RAM : ");
+  Serial.println(freeRam());
+
+
+  if(logic_collection.logic_count() > num_logic_interfaces) {
+     Serial.println("***");
+     Serial.write("logic_count() larger than the dimensioned size : ");
+     Serial.println(num_logic_interfaces);
+     Serial.println("***");     
+  } 
+
+  if(loconet_adapter.sensor_count() > num_sensors) {
+     Serial.println("***");
+     Serial.write("sensor_count() larger than the dimensioned size : ");
+     Serial.println(num_sensors);
+     Serial.println("***");     
+  } 
+
+
+}
+
+
+void loop(void) {
+	loconet_adapter.loop();
+	logic_collection.loop();
+}
+

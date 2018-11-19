@@ -1,0 +1,4 @@
+[Logic_interface||+loop()=0],
+[Logic_interface]^-[Simple_ryg_logic|head_:Head_interface;protected_heads_:Head_interface;protected_sensor_:vector(Sensor_interface)|+loop()]
+[Simple_ryg_logic]<>-2>[Head_interface]
+[Simple_ryg_logic]<>-0..n>[Sensor_interface]

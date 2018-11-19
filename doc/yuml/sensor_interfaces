@@ -1,0 +1,7 @@
+[Sensor_interface||+is_active():Bool=0;+is_indeterminate():Bool=0],
+[Sensor_interface]^-[Active_sensor||+is_active():True;+is_indeterminate():False],
+[Sensor_interface]^-[Head_aspect_sensor|-head_:Head_interface;active_aspect_:Head_aspect|+is_active();+is_indeterminate()],
+[Sensor_interface]^-[Lever_with_pushkey|-lever_:Sensor_interface;-push_key_:Sensor_interface;-lever_reversed_:Bool;-state_:Bool|+is_active();+is_indeterminate()],
+[Sensor_interface]^-[Red_head_sensor|-head_:Head_interface|+is_active():Bool;is_indeterminate():Bool],
+[Sensor_interface]^-[Inverted_interface|-sensor:Sensor_interface|+is_active():Bool;+is_indeterminate():Bool],
+[Sensor_interface]^-[Sensor_base|state_:Bool;indeterminate_:Bool|+is_active()|+is_indeterminate();+set_state(Bool)]
