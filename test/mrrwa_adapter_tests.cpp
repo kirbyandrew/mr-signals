@@ -73,17 +73,15 @@ TEST(MrrwaAdapter,BasicMappingCalls)
     const uint8_t tx_pin=2;
     LocoNetMock loconet_mock;
 
-    init_millis();
-    EXPECT_CALL(loconet_mock,init(tx_pin));
+    init_millis();  // Reset the millis() clock
+
+    EXPECT_CALL(loconet_mock,init(tx_pin)); // Expect the call to init() when loconet_adapter() is instantiated
+
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
 
     // Test the basic expected calls
-
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(loconet_mock,reportPower(1)).WillOnce(Return(LN_DONE));
-
-
-    EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
 
 
     // Run for long enough to allo the reportPower(1) be called
@@ -391,14 +389,6 @@ MATCHER_P(test_3_byte_send, bytes, "") {
 
     bool isMatch = (memcmp(dataToCheck, bytes, 3) == 0);
 
-/*
-    std::cout << "test_3_byte_send" << std::endl;
-
-    for(int i=0;i<3;i++) {
-//        std::cout <<  std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(bytes[i]) << ":" << static_cast<int>(dataToCheck[i]) << std::endl;
-        printf("%02X:%02X\n",bytes[i],dataToCheck[i]);
-    }
-*/
     return isMatch;
 }
 

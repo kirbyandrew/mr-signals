@@ -22,6 +22,7 @@
 #include "helpers.h"
 #include "pin_sensor.h"
 #include "triple_pin_head.h"
+#include "apb_logic.h"
 
 using namespace mr_signals;
 
@@ -1233,3 +1234,7 @@ TEST(Pin_sensor,base) {
     Triple_pin_head head_1("Head1",1,2,3);
 }
 
+
+TEST(Apb_logic,base) {
+
+}
