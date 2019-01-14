@@ -31,7 +31,7 @@ Triple_pin_head::Triple_pin_head(const char* name, uint8_t green_pin, uint8_t ye
 
 
 /// Ensure that only the single pin associated with the requested aspect is high
-bool Triple_pin_head::request_aspect(const Head_aspect aspect) {
+bool Triple_pin_head::request_outputs(const Head_aspect aspect) {
 
     bool result = true;
 

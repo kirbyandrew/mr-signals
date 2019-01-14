@@ -28,12 +28,13 @@ public:
     /// Initialize the head with a name and the three pins that it controls
     Triple_pin_head(const char *name, uint8_t green_pin, uint8_t yellow_pin, uint8_t red_pin);
 
-    bool request_aspect(const Head_aspect) override;
 
     // Does nothing
     void loop() override {}
 
 protected:
+
+    bool request_outputs(const Head_aspect) override;
 
     uint8_t green_pin_;
     uint8_t yellow_pin_;

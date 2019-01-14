@@ -23,6 +23,7 @@
 #include "pin_sensor.h"
 #include "triple_pin_head.h"
 #include "apb_logic.h"
+#include "arduino_mock.h"
 
 using namespace mr_signals;
 
@@ -1229,11 +1230,57 @@ TEST(Active_sensor_test, IsEmptyInitially) {
 
 }
 
+const uint8_t green_pin = 1;
+const uint8_t yellow_pin = 2;
+const uint8_t red_pin = 3;
+
 TEST(Pin_sensor,base) {
     Pin_sensor sensor_1(2);
-    Triple_pin_head head_1("Head1",1,2,3);
 }
 
+TEST(Triple_pin_head,aspects) {
+
+    Triple_pin_head head_1("Head1",green_pin,yellow_pin,red_pin);
+
+    // After the head is instantiated, the pins should be OUTPUTs,
+    // LOW and and the head Dark
+    EXPECT_EQ(OUTPUT,getPinMode(green_pin));
+    EXPECT_EQ(OUTPUT,getPinMode(yellow_pin));
+    EXPECT_EQ(OUTPUT,getPinMode(red_pin));
+
+    EXPECT_EQ(LOW,digitalRead(green_pin));
+    EXPECT_EQ(LOW,digitalRead(yellow_pin));
+    EXPECT_EQ(LOW,digitalRead(red_pin));
+
+    EXPECT_EQ(Head_aspect::dark,head_1.get_aspect());
+
+
+    // Set to Green, confirm pins and aspect
+    head_1.request_aspect((Head_aspect::green));
+
+    EXPECT_EQ(HIGH,digitalRead(green_pin));
+    EXPECT_EQ(LOW,digitalRead(yellow_pin));
+    EXPECT_EQ(LOW,digitalRead(red_pin));
+    EXPECT_EQ(Head_aspect::green,head_1.get_aspect());
+
+
+    // Set to Yellow, confirm pins and aspect
+    head_1.request_aspect((Head_aspect::yellow));
+
+    EXPECT_EQ(LOW,digitalRead(green_pin));
+    EXPECT_EQ(HIGH,digitalRead(yellow_pin));
+    EXPECT_EQ(LOW,digitalRead(red_pin));
+    EXPECT_EQ(Head_aspect::yellow,head_1.get_aspect());
+
+
+    // Set to Red, confirm pins and aspect
+    head_1.request_aspect((Head_aspect::red));
+
+    EXPECT_EQ(LOW,digitalRead(green_pin));
+    EXPECT_EQ(LOW,digitalRead(yellow_pin));
+    EXPECT_EQ(HIGH,digitalRead(red_pin));
+    EXPECT_EQ(Head_aspect::red,head_1.get_aspect());
+}
 
 TEST(Apb_logic,base) {
 

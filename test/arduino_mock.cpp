@@ -35,13 +35,17 @@ void init_millis(void)
 
 const uint8_t num_digital_io = 14;
 
-uint8_t dio_mode[num_digital_io] = {0};
-uint8_t dio_val[num_digital_io] = {0};
+uint8_t dio_mode[num_digital_io] = {INPUT,INPUT,INPUT,INPUT,INPUT,INPUT,INPUT,INPUT,INPUT,INPUT,INPUT,INPUT,INPUT,INPUT};
+uint8_t dio_val[num_digital_io] = {LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW};
 
 void pinMode(uint8_t pin, uint8_t mode) {
     if(pin < num_digital_io) {
         dio_mode[pin] = mode;
     }
+}
+
+uint8_t getPinMode(uint8_t pin) {
+    return(dio_mode[pin]);
 }
 
 void digitalWrite(uint8_t pin, uint8_t val) {

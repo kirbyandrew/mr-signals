@@ -50,6 +50,8 @@ void init_millis(void);
 void digitalWrite(uint8_t pin, uint8_t val);
 uint8_t digitalRead(uint8_t pin);
 void pinMode(uint8_t pin, uint8_t mode);
+uint8_t getPinMode(uint8_t pin);
+
 
 
 #endif /* TEST_ARDUINO_MOCK_H_ */
