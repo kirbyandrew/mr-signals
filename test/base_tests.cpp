@@ -25,6 +25,8 @@
 #include "apb_logic.h"
 #include "arduino_mock.h"
 
+#include "mast_test_helpers.h"
+
 using namespace mr_signals;
 
 
@@ -1282,6 +1284,127 @@ TEST(Triple_pin_head,aspects) {
     EXPECT_EQ(Head_aspect::red,head_1.get_aspect());
 }
 
-TEST(Apb_logic,base) {
 
+TEST(Apb_logic,simple_apb) {
+
+    Sensor_base sensor_1_;
+    Sensor_base sensor_2_;
+
+    Simple_apb apb_test({&sensor_1_, &sensor_2_});
+
+
+    // Do initial indeterminate tests
+    EXPECT_TRUE(sensor_1_.is_indeterminate());
+    EXPECT_TRUE(sensor_2_.is_indeterminate());
+
+    EXPECT_TRUE(apb_test.down_tumbledown().is_indeterminate());
+    EXPECT_TRUE(apb_test.up_tumbledown().is_indeterminate());
+
+
+
+
+    // Create a tester helper to simplify following code
+    Logic_sensor_test sensor_tester(apb_test,{&sensor_1_,&sensor_2_},{&apb_test.down_tumbledown(),&apb_test.up_tumbledown()});
+
+
+    /* Use following comments pattern to diagramatically represent what each case would
+     * look like on a layout
+    Up tumbledown : would be a sensor added to each signal protecting travel in <- direction
+    Down tumbledown : would be protected by each signal protecting travel in -> direction
+
+    |-- sensor_1 --|-- sensor_2 -- |
+
+    x = inactive sensor
+    A = active sensor
+
+    <====== or =====> represents a train as it crosses the sensor boundaries
+    */
+
+
+
+    // Run a loop with the inputs still indeterminate; the outputs should still be the same
+    EXPECT_TRUE(sensor_tester.set_loop_test({-1,-1},{-1,-1}));
+
+
+    /* Set the sensors inactive; ensure the tumbledown states follow as expected
+    Up (<- facing) inactive
+    Down (-> facing) inactive
+    |-- x --|-- x -- |
+    */
+
+    EXPECT_TRUE(sensor_tester.set_loop_test({0,0},{0,0}));
+
+    /* Train 'enters' in the down direction
+    Up (<- facing) Active
+    Down (-> facing) inactive
+
+  ===>
+    |-- A --|-- x -- |
+    */
+    EXPECT_TRUE(sensor_tester.set_loop_test({1,0},{0,1}));
+
+    /*
+    Up (<- facing) Active
+    Down (-> facing) inactive
+
+          =====>
+    |-- A --|-- A -- |
+    */
+    EXPECT_TRUE(sensor_tester.set_loop_test({1,1},{0,1}));
+
+    /*
+    Up (<- facing) Active
+    Down (-> facing) inactive
+
+              =====>
+    |-- x --|-- A -- |
+    */
+    EXPECT_TRUE(sensor_tester.set_loop_test({0,1},{0,1}));
+
+
+    /* Train 'leaves', all sensors inactive, tumbledowns
+    Up (<- facing) inactive
+    Down (-> facing) inactive
+                       =====>
+    |-- x --|-- x -- |
+    */
+    EXPECT_TRUE(sensor_tester.set_loop_test({0,0},{0,0}));
+
+
+    /* Train enters in other direction
+    Up (<- facing) inactive
+    Down (-> facing) Active
+
+                  <=====
+    |-- x --|-- A -- |
+    */
+    EXPECT_TRUE(sensor_tester.set_loop_test({0,1},{1,0}));
+
+    /*
+    Up (<- facing) inactive
+    Down (-> facing) Active
+
+          <=====
+    |-- A --|-- A -- |
+    */
+    EXPECT_TRUE(sensor_tester.set_loop_test({1,1},{1,0}));
+
+
+    /*
+    Up (<- facing) inactive
+    Down (-> facing) Active
+
+     <=====
+    |-- A --|-- x -- |
+    */
+    EXPECT_TRUE(sensor_tester.set_loop_test({1,0},{1,0}));
+
+    /*
+    Up (<- facing) inactive
+    Down (-> facing) inactive
+
+<==
+    |-- x --|-- x -- |
+    */
+    EXPECT_TRUE(sensor_tester.set_loop_test({0,0},{0,0}));
 }

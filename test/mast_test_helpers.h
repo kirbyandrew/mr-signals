@@ -269,6 +269,141 @@ private:
 
 };
 
+// TODO: Update entire file into just helpers; not just mast_test_helpers.  Add needed #includes.
+
+/* Enum to support class Logic_sensor_test() and similar */
+enum class Sensor_set_states { set_inactive, set_active, nochange };
+enum class Sensor_test_state { is_inactive,  is_active,  is_indeterminate} ;
+
+/**
+ * Helper class to simplify writing tests for interactions of sensors
+ *
+ * Concrete instance is declared with a Logic_interface to loop, a list of
+ * 'input' sensors whose state is set as part of the test action, and a
+ * list of 'output' sensors whose state is then tested
+ *
+ * Example:
+ * Logic_interface my_logic;
+ * Sensor_base in_sensor1;
+ * Sensor_base in_sensor2;
+ * Sensor_base out_sensor1;
+ * Sensor_base out_sensor2;
+ *
+ * Logic_sensor_test sensor_test(my_logic,
+ *                               {in_sensor1, in_sensor2},
+ *                               {out_sensor1, out_sensor2});
+ *
+ * # If input sensors are set to true and not changed respectively,
+ * # expect indeterminate and false in the outputs after running the logic
+ * # loop
+ * EXPECT_TRUE(sensor_test.set_loop_test({1,-1},{-1,0}))
+ *
+ * this would set in_sensor1 active, not change in_sensor2, and expects
+ * out_sensor1 to be indeterminate, and out_sensor2 to be inactive.
+ *
+ * This is the expected relationship
+ *
+ */
+
+
+class Logic_sensor_test {
+
+public:
+    Logic_sensor_test(  Logic_interface &logic,
+                        std::initializer_list<Sensor_base *> const & sensors_to_set,
+                        std::initializer_list<Sensor_interface*> const & sensors_to_test) :
+                            logic_(logic),
+                            sensors_to_set_(sensors_to_set),
+                            sensors_to_test_(sensors_to_test) {
+    }
+
+    bool set_loop_test( std::vector<int> set_sensor_values,
+                        std::vector<int> test_sensor_values) {
+
+
+        //TODO: Add range checks of inputs against the underlying data structures
+
+        int idx = 0;
+        // Set sensors to passed set values
+        for(auto &val: set_sensor_values) {
+            if(0 == val) {
+                sensors_to_set_[idx]->set_state(false);
+            }
+            else if(1==val) {
+                sensors_to_set_[idx]->set_state(true);
+            }
+            else if(-1==val) {
+                // can't set sensor to indeterminate, ignore
+            }
+            else {
+                // Invalid set request
+                return false;
+            }
+            // else ignore
+            idx++;
+        }
+
+        // Loop the logic
+        logic_.loop();
+
+        idx = 0;
+
+        // Test sensors against passed test values
+        for(auto &val: test_sensor_values) {
+
+            if(-1 == val) { // Indeterminate
+
+                if(true != sensors_to_test_[idx]->is_indeterminate()) {
+                    return false;
+                }
+            }
+            else if(0 == val) {  // Inactive
+               if(!(false == sensors_to_test_[idx]->is_indeterminate() &&
+                    false == sensors_to_test_[idx]->is_active())) {
+                   // Sensor needs to be not indeterminate and inactive
+                   return false;
+               }
+            }
+
+            else if(1 == val) {  // Active
+                if(!(false == sensors_to_test_[idx]->is_indeterminate() &&
+                     true == sensors_to_test_[idx]->is_active())) {
+                    // Sensor needs to be not indeterminate and active
+                    return false;
+                }
+            }
+            else {
+                // Invalid state to test
+                return false;
+            }
+
+            idx++;
+        }   // end for()
+
+        // All tests passed, return success
+        return true;
+    }
+
+
+private:
+    Logic_interface &logic_;
+    std::vector<Sensor_base*> sensors_to_set_;
+    std::vector<Sensor_interface*> sensors_to_test_;
+
+
+};
+
+/*
+ *     Simple_apb(std::initializer_list<Sensor_interface *> const & protected_sensors);
+
+    void loop() override;
+
+    Sensor_interface& down_tumbledown();
+    Sensor_interface& up_tumbledown();
+
+protected:
+    std::vector<Sensor_interface*> protected_sensors_;
+ */
 
 
 } // namespace mr_signals
