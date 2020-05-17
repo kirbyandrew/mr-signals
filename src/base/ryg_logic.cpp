@@ -186,8 +186,11 @@ void Interlocked_ryg_logic::loop()
             head_.set_held(false);
 
             if (Head_aspect::red != head_.get_aspect()) {
+
+                Serial << head_.get_name() << F(" lever normal; set to red\n");
+
                 if(head_.request_aspect(Head_aspect::red)) {
-                    Serial << head_.get_name() << F(" lever normal; set to red\n");
+                    Serial << F("(Accepted)\n");
                 }
             }
         }

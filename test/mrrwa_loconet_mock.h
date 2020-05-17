@@ -86,6 +86,8 @@ typedef union
 #define OPC_SW_REQ_DIR    0x20  /* switch direction - closed/thrown     */
 #define OPC_SW_REQ_OUT    0x10  /* output On/Off                        */
 
+#define OPC_LONG_ACK      0xb4
+
 #define OPC_GPON          0x83
 
 

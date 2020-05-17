@@ -18,8 +18,8 @@ extern Mrrwa_loconet_adapter loconet;
 //extern Logic_collection logic_collection;
 
 const int tx_pin = 47;
-const size_t num_sensors = 10;
-const size_t tx_buffer_size = 6;
+const size_t num_sensors = 20;
+const size_t tx_buffer_size = 600;
 
 Mrrwa_loconet_adapter loconet(LocoNet, tx_pin, num_sensors, tx_buffer_size);
 
@@ -49,9 +49,6 @@ void check_init_size(const char *term, size_t count, size_t init_size) {
 void setup() {
   // put your setup code here, to run once:
 
-
-
- // LocoNet.init(47);
   loconet.setup();
 
   Serial.begin(57600);
@@ -61,15 +58,28 @@ void setup() {
 
   check_init_size("Sensors", loconet.sensor_count(), loconet. sensor_init_size());
   check_init_size("Logics", logic_collection.logic_count(),logic_collection.logic_init_size());
-
+  
   Serial << F("\n");
 }
 
 void loop() {
 
+  static Runtime_ms last_stat_report = 0;
+
   loconet.loop();
   logic_collection.loop();
   command_line_loop();
+
+  if(millis() > last_stat_report) {
+    // Periodically report statistics every 20s
+
+    Serial << F("LocoNet Stats:\n");
+    Serial << F("-Tx buffer_high_watermark : ") << loconet.get_buffer_high_watermark() << F("/") << tx_buffer_size << endl;
+    Serial << F("-Tx error count : ") << loconet.get_tx_error_count() << endl;
+    Serial << F("-LONG_ACKs rcvd : ") << loconet.get_long_ack_count() << endl;
+    
+    last_stat_report = millis() + 20000;
+  }
   
 }
 

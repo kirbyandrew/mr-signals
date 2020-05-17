@@ -102,7 +102,12 @@ public:
      * @param loconet           Reference to the MRWWA object in use
      * @param tx_pin            Arduino transmit pin
      * @param num_sensors       Pre-initialize the list of sensors
-     * @param tx_buffer_size    Set the transmit buffer queue size
+     * @param tx_buffer_size    Set the transmit buffer queue size.  IMPORTANT!  This must
+     *                          be large enough to hold all messages that may be transmitted simultaneously
+     *                          otherwise the system could enter an unrecoverable state.
+     *                          For each double output head, assume 4x3-byte messages
+     *                          A value of many hundreds is recommended.  The buffer high watermark
+     *                          can be accessed by get_buffer_high_watermark and printed periodically.
      */
     Mrrwa_loconet_adapter(LocoNetClass& loconet, int tx_pin=2, size_t num_sensors=0, size_t tx_buffer_size=100);
 
@@ -223,17 +228,44 @@ public:
 
     /**
      * Retrieve the internal transmit error count
-     * @return
+     * @return The tx error count
      */
     const uint16_t get_tx_error_count() {
         return tx_errors_;
     }
 
+    /**
+     * Retrieve the internal count of OPC_LONG_ACKs (error from command station in response to switch request) received
+     * @return The long ack count
+     */
+    const uint16_t get_long_ack_count() {
+        return long_acks_;
+    }
+
 
     /**
-     * Prints the current state of the attached sensors
+     * Prints the current state of the attached sensors using
+     * the Serial stream from mr_signals.h
      */
     void print_sensors() const;
+
+
+    /**
+     *  Prints the content of an lnMsg in 2 byte hex format with a prefix
+     *  (e.g. "LN RX" or "LN TX") using the Serial output stream from mr_signals.h
+     *  A timestamp in milliseconds is prepended to the trace.
+     *
+     * @param packet - Pointer to a lnMsg to print
+     * @param prefix - String prefix to print
+     * @param print_checksum - Indicates whether or not to print the last
+     *                 byte in the lnMsg, which is the checksum.  Pass false
+     *                 if this function is being used where the checksum byte
+     *                 is not initialized and will otherwise cause confusion
+     *                 if printed.
+     *
+     */
+
+    void print_lnMsg(lnMsg *packet, const char *prefix, bool print_checksum);
 
 
 private:
@@ -264,6 +296,9 @@ private:
 
     /// Count of transmit errors from the MRRWA library
     uint16_t tx_errors_;
+
+    // Count of LONG_ACKs received for switch messages
+    uint16_t long_acks_;
 
     /// Instance of the MRWWA Loconet Class used by the adapter
     LocoNetClass& loconet_;

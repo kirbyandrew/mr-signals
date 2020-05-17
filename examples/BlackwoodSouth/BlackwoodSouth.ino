@@ -10,11 +10,15 @@
 #include <mr_signals.h>   // Print()
 #include <LocoNet.h>
 
+#include "configs/blackwood_south.h"
+
 #include "loconet/mrrwa_loconet_adapter.h"
 
 using namespace mr_signals;
 
 const size_t num_logic_interfaces = 5;
+
+
 
 Logic_collection logic_collection(num_logic_interfaces);
 
@@ -135,6 +139,7 @@ void setup() {
  // test_switch.loop();
 
 
+//  testi = 3;
 //  Serial.begin(9600);
 //  Serial.begin(57600);
   Serial.begin(115200);

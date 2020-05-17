@@ -15,13 +15,6 @@
 
 using namespace mr_signals;
 
-/*
-const int tx_pin = 47;
-const size_t num_sensors = 10;
-const size_t tx_buffer_size = 6;
-
-Mrrwa_loconet_adapter loconet(LocoNet, tx_pin, num_sensors, tx_buffer_size);
-*/
 
 Logic_collection logic_collection(6);
 

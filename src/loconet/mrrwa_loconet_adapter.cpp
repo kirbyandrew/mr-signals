@@ -67,7 +67,7 @@ namespace mr_signals {
 
 Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
         sensor_init_size_(num_sensors), next_tx_time_ms_(0), send_gp_on_time_ms_(0),
-        tx_errors_(0), loconet_(loconet), tx_pin_(tx_pin)
+        tx_errors_(0), long_acks_(0), loconet_(loconet), tx_pin_(tx_pin)
 {
 
     if(num_sensors) {
@@ -163,39 +163,60 @@ void Mrrwa_loconet_adapter::notify_sensors(Loconet_address address, bool state) 
     });
 }
 
+void Mrrwa_loconet_adapter::print_lnMsg(lnMsg *ln_packet, const char *prefix, bool print_checksum)
+{
+    char timestamp[12];
+    sprintf(timestamp,"%08lu",get_time_ms());   // TODO: Why does this throw a warning in Eclipse of being a unsigned int??
+
+    Serial << timestamp << ":";
+
+    Serial << prefix << " ";
+
+    uint8_t msg_len = getLnMsgSize(ln_packet);
+
+    if(!print_checksum) { msg_len--; }   // If not requested, don't print the checksum byte
+
+    for (uint8_t x = 0; x < msg_len; x++)
+    {
+        uint8_t val = ln_packet->data[x];
+        // Print a leading 0 if less than 16 to make 2 HEX digits
+        if (val < 16)
+            Serial << F("0");
+
+#ifdef ARDUINO
+
+        // TODO: Fix this mess.  HEX stream doesn't work in Arduino
+        Serial.print(val,HEX);
+        Serial.print(' ');
+#else
+        Serial << HEX << unsigned(val) << " "; // Works in Windows, garbage in arduino
+        Serial << HEX << val << " ";
+#endif
+    }
+
+    Serial << endl;
+
+
+}
+
 
 
 void Mrrwa_loconet_adapter::receive_loop()
 {
     lnMsg        *ln_packet;
 
+
     ln_packet = loconet_.receive();
 
     if(nullptr != ln_packet) {
 
-        Serial << F("LN RX : ");
+        print_lnMsg(ln_packet,"LN RX",true);
 
-        uint8_t msg_len = getLnMsgSize(ln_packet);
-
-        for (uint8_t x = 0; x < msg_len; x++)
-        {
-            uint8_t val = ln_packet->data[x];
-            // Print a leading 0 if less than 16 to make 2 HEX digits
-            if (val < 16)
-                Serial << F("0");
-
-#ifdef ARDUINO
-
-            // TODO: Fix this mess.  HEX stream doesn't work in Arduino
-            Serial.print(val,HEX);
-            Serial.print(' ');
-#else
-            Serial << HEX << unsigned(val) << " "; // Works in Windows, garbage in arduino
-            Serial << HEX << val << " ";
-#endif
+        if(OPC_LONG_ACK == ln_packet->data[0]) {
+            Serial << F("LONG_ACK!") << endl;
+            long_acks_++;
         }
 
-        Serial << endl;
 
         loconet_.processSwitchSensorMessage(ln_packet);
     }
@@ -209,8 +230,11 @@ void Mrrwa_loconet_adapter::transmit_loop()
 
         if(tx_buffer_.dequeue_loconet_msg(ln_msg)) {
 
+            print_lnMsg(&ln_msg,"LN TX",false);
+
             if(LN_DONE != loconet_.send(&ln_msg)) {
                 tx_errors_++;
+                Serial << "-TX error";
             }
 
             next_tx_time_ms_ = get_time_ms() + transmit_delay_ms_;
