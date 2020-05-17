@@ -9,7 +9,7 @@
 #define SRC_HELPERS_H_
 
 #include "sensor_interface.h"
-#include "head_interface.h"
+#include "base/head_interface.h"
 
 namespace mr_signals {
 

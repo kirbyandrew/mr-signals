@@ -22,7 +22,9 @@ namespace mr_signals {
  * (request_direction)that elements which uses switches (such as signal heads).
  *
  * Each instance is initialized with a Loconet Adapter which it uses to
- * transmit the switch commands on Loconet.
+ * transmit the switch commands on Loconet.  To save memory a static member
+ * is used to store the Loconet Adapter so a pointer is used instead of
+ * a reference.
  *
  * LocoNet switch commands (OPC_SW_REQ) are sent with an on and off argument.
  * The command is first sent with the on argument, and then followed by the

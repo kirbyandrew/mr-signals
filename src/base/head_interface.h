@@ -9,6 +9,7 @@
 #define SRC_BASE_HEAD_INTERFACE_H_
 
 #include <stdint.h>
+#include <iostream>
 
 namespace mr_signals {
 
@@ -30,6 +31,29 @@ inline Head_aspect operator++(Head_aspect& aspect,int)
     return aspect = static_cast<Head_aspect>(static_cast<uint8_t>(aspect)+1);
 }
 
+#ifdef ARDUINO
+#include <Arduino.h>
+
+// Specialized print stream operator for Head_aspect
+Print &operator <<(Print &obj, mr_signals::Head_aspect aspect );
+
+#else
+
+inline
+std::ostream &operator<<( std::ostream &os, const Head_aspect aspect )
+{
+  switch (aspect) {
+
+      case Head_aspect::unknown: os << "unknown"; break;
+      case Head_aspect::dark: os << "dark"; break;
+      case Head_aspect::red: os << "red"; break;
+      case Head_aspect::yellow: os << "yellow"; break;
+      case Head_aspect::green: os << "green"; break;
+      default: os << "invalid";
+  }
+  return os;
+}
+#endif
 
 
 /**

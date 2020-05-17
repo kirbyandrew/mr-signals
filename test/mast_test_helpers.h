@@ -272,15 +272,16 @@ private:
 // TODO: Update entire file into just helpers; not just mast_test_helpers.  Add needed #includes.
 
 /* Enum to support class Logic_sensor_test() and similar */
-enum class Sensor_set_states { set_inactive, set_active, nochange };
-enum class Sensor_test_state { is_inactive,  is_active,  is_indeterminate} ;
+enum class Sensor_set { inactive, active, nochange };
+enum class Sensor_test{ inactive,  active,  indeterminate} ;
 
 /**
  * Helper class to simplify writing tests for interactions of sensors
  *
  * Concrete instance is declared with a Logic_interface to loop, a list of
- * 'input' sensors whose state is set as part of the test action, and a
- * list of 'output' sensors whose state is then tested
+ * 'input' sensors whose state is set as part of the test action,
+ *  and a list of 'output' sensors whose state is then tested after the
+ *  logic's loop function is called
  *
  * Example:
  * Logic_interface my_logic;
@@ -317,47 +318,81 @@ public:
                             sensors_to_test_(sensors_to_test) {
     }
 
-    bool set_loop_test( std::vector<int> set_sensor_values,
-                        std::vector<int> test_sensor_values) {
+#if 0
+    bool set_loop_test( std::initializer_list<Sensor_set> set_sensor_values,
+                        std::initializer_list<Sensor_test> test_sensor_values) {
 
+        // std::vector<Sensor_set> set_sensor_values_(set_sensor_values);
+        // std::vector<Sensor_test> test_sensor_value_(test_sensor_values);
+
+        // std::vector<testNetInfo> netInfo(initList.begin(), initList.end());
+
+        return(set_loop_test(set_sensor_values,test_sensor_values));
+
+    }
+#endif
+
+    bool set_loop_test( std::vector<Sensor_set> set_sensor_values,
+                        std::vector<Sensor_test> test_sensor_values) {
 
         //TODO: Add range checks of inputs against the underlying data structures
 
         int idx = 0;
         // Set sensors to passed set values
         for(auto &val: set_sensor_values) {
-            if(0 == val) {
+
+            std::cout << (int)val << " ";
+
+            if(Sensor_set::inactive == val) {
                 sensors_to_set_[idx]->set_state(false);
+                std::cout << "(in),";
             }
-            else if(1==val) {
+            else if(Sensor_set::active == val) {
                 sensors_to_set_[idx]->set_state(true);
-            }
-            else if(-1==val) {
-                // can't set sensor to indeterminate, ignore
+                std::cout << "(ac),";
             }
             else {
-                // Invalid set request
-                return false;
+                // Sensor_set::nochange
+                // can't set sensor to indeterminate, ignore
+                std::cout << "(ot),";
             }
-            // else ignore
             idx++;
         }
+        std::cout << "\n";
+
 
         // Loop the logic
         logic_.loop();
 
         idx = 0;
+        for(auto &val: test_sensor_values) {
+
+            if(sensors_to_test_[idx]->is_indeterminate()) {
+                std::cout << "(id) ";
+            }
+            else if(sensors_to_test_[idx]->is_active()) {
+                std::cout << "(ac) ";
+            }
+            else {
+                std::cout << "(in) ";
+            }
+
+            idx++;
+        }
+
+        std::cout << "\n";
+        idx = 0;
 
         // Test sensors against passed test values
         for(auto &val: test_sensor_values) {
 
-            if(-1 == val) { // Indeterminate
+            if(Sensor_test::indeterminate == val) { // Indeterminate
 
                 if(true != sensors_to_test_[idx]->is_indeterminate()) {
                     return false;
                 }
             }
-            else if(0 == val) {  // Inactive
+            else if(Sensor_test::inactive == val) {  // Inactive
                if(!(false == sensors_to_test_[idx]->is_indeterminate() &&
                     false == sensors_to_test_[idx]->is_active())) {
                    // Sensor needs to be not indeterminate and inactive
@@ -365,7 +400,7 @@ public:
                }
             }
 
-            else if(1 == val) {  // Active
+            else if(Sensor_test::active == val) {  // Active
                 if(!(false == sensors_to_test_[idx]->is_indeterminate() &&
                      true == sensors_to_test_[idx]->is_active())) {
                     // Sensor needs to be not indeterminate and active

@@ -1285,6 +1285,55 @@ TEST(Triple_pin_head,aspects) {
 }
 
 
+
+/*
+Test the simple APB implementation.  In the simple APB, there are only two tumbledown
+sensors, one for each direction, and each is added to each signal within the APB
+block protecting travel in that direction within the block.
+
+Only the tumbledown in the opposing direction is set in the 'simple' APB, and signals past
+by the train do not clear as the train proceeds through the block.  This greatly reduces the
+memory requirements of the APB implementation
+
+Signals in the direction of travel of the train continue to work in whatever underlying
+interlocking (e.g. ABS) is already in place.
+
+
+
+The following comment pattern is used to 'diagrammatically' represent what each
+each test case would look like in a physical representation on a layout
+
+Up (<- facing)  :is a APB tumbledown sensor added to each signal protecting
+                 travel in the <- direction (apb_test.up_tumbledown in the code)
+                 protected by the APB block
+
+Down (-> facing):is a APB tumbledown sensor added to each signal protecting
+                 travel in the -> direction (apb_test.down_tumbledown in the code)
+                 protected by the APB block
+
+x             (x)
+|-- sensor_1 --|-- sensor_2 -- |
+              (A)              A
+
+This is the 'physical' APB block; 2 sensors with 2 signals in each direction
+each at (|).  The Down (->_ protecting signals would be at the first and second |,
+shown as x and (x) above, and the Up (<-) protecting signals would be a the
+second and third |, shown as (A) and A above.
+
+For the remainder of the diagrams, the (x) and (A) are omitted for clarity
+
+The state of sensor_1, sensor_2 and the up and down tumblehomes are represented as
+
+x = inactive sensor
+A = active sensor
+
+
+<======
+or
+=====> represents a train as it crosses the sensor boundaries
+*/
+
+#if 0
 TEST(Apb_logic,simple_apb) {
 
     Sensor_base sensor_1_;
@@ -1304,90 +1353,116 @@ TEST(Apb_logic,simple_apb) {
 
 
     // Create a tester helper to simplify following code
-    Logic_sensor_test sensor_tester(apb_test,{&sensor_1_,&sensor_2_},{&apb_test.down_tumbledown(),&apb_test.up_tumbledown()});
+    Logic_sensor_test sensor_tester(apb_test,
+                                    {&sensor_1_,&sensor_2_},
+                                    {&apb_test.down_tumbledown(),&apb_test.up_tumbledown()});
 
 
-    /* Use following comments pattern to diagramatically represent what each case would
-     * look like on a layout
-    Up tumbledown : would be a sensor added to each signal protecting travel in <- direction
-    Down tumbledown : would be protected by each signal protecting travel in -> direction
-
-    |-- sensor_1 --|-- sensor_2 -- |
-
-    x = inactive sensor
-    A = active sensor
-
-    <====== or =====> represents a train as it crosses the sensor boundaries
-    */
 
 
 
     // Run a loop with the inputs still indeterminate; the outputs should still be the same
-    EXPECT_TRUE(sensor_tester.set_loop_test({-1,-1},{-1,-1}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::nochange,Sensor_set::nochange},
+                                            {Sensor_test::indeterminate,Sensor_test::indeterminate}));
 
 
-    /* Set the sensors inactive; ensure the tumbledown states follow as expected
+    /* Set the sensors inactive; ensure the tumbledown states follow as expected (inactive)
     Up (<- facing) inactive
     Down (-> facing) inactive
+    x
     |-- x --|-- x -- |
+                     x
     */
 
-    EXPECT_TRUE(sensor_tester.set_loop_test({0,0},{0,0}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::inactive,Sensor_set::inactive},
+                                            {Sensor_test::inactive,Sensor_test::inactive}));
 
     /* Train 'enters' in the down direction
     Up (<- facing) Active
     Down (-> facing) inactive
 
+    The should set the Up (<-) Tumbledown sensors active, and leave the Down tumbledown inactive
+
   ===>
+    x
     |-- A --|-- x -- |
+                     A
     */
-    EXPECT_TRUE(sensor_tester.set_loop_test({1,0},{0,1}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::active,Sensor_set::inactive},
+                                            {Sensor_test::inactive,Sensor_test::active}));
 
     /*
+    The train proceeds in the Down direction and now occupies both blocks;
+    tumbledowns should remain the same
+
     Up (<- facing) Active
     Down (-> facing) inactive
 
           =====>
+    x
     |-- A --|-- A -- |
+                     A
     */
-    EXPECT_TRUE(sensor_tester.set_loop_test({1,1},{0,1}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::active,Sensor_set::active},
+                                            {Sensor_test::inactive,Sensor_test::active}));
 
     /*
+
+    Train is now fully in the second block
+
     Up (<- facing) Active
     Down (-> facing) inactive
 
               =====>
+    x
     |-- x --|-- A -- |
+                     A
     */
-    EXPECT_TRUE(sensor_tester.set_loop_test({0,1},{0,1}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::inactive,Sensor_set::active},
+                                            {Sensor_test::inactive,Sensor_test::active}));
 
 
-    /* Train 'leaves', all sensors inactive, tumbledowns
+    /* Train 'leaves', both sensors go inactive, tumbledowns will clear (go inactive)
     Up (<- facing) inactive
     Down (-> facing) inactive
                        =====>
+    x
     |-- x --|-- x -- |
+                     x
     */
-    EXPECT_TRUE(sensor_tester.set_loop_test({0,0},{0,0}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::inactive,Sensor_set::inactive},
+                                            {Sensor_test::inactive,Sensor_test::inactive}));
 
 
     /* Train enters in other direction
+
+    The Up signal tumbledowns should no go active, with the down ones staying inactive
+
     Up (<- facing) inactive
     Down (-> facing) Active
 
                   <=====
+    A
     |-- x --|-- A -- |
+                     x
     */
-    EXPECT_TRUE(sensor_tester.set_loop_test({0,1},{1,0}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::inactive,Sensor_set::active},
+                                            {Sensor_test::active,Sensor_test::inactive}));
 
     /*
+
+    Train occupies both blocks
+
     Up (<- facing) inactive
     Down (-> facing) Active
 
           <=====
+    A
     |-- A --|-- A -- |
+                     x
     */
-    EXPECT_TRUE(sensor_tester.set_loop_test({1,1},{1,0}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::active,Sensor_set::active},
+                                            {Sensor_test::active,Sensor_test::inactive}));
 
 
     /*
@@ -1395,16 +1470,175 @@ TEST(Apb_logic,simple_apb) {
     Down (-> facing) Active
 
      <=====
+    A
     |-- A --|-- x -- |
+                     x
     */
-    EXPECT_TRUE(sensor_tester.set_loop_test({1,0},{1,0}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::active,Sensor_set::inactive},
+                                            {Sensor_test::active,Sensor_test::inactive}));
 
     /*
+    Train leaves APB block; sensors and tumbledowns go inactive
     Up (<- facing) inactive
     Down (-> facing) inactive
 
 <==
+    x
     |-- x --|-- x -- |
+                     x
     */
-    EXPECT_TRUE(sensor_tester.set_loop_test({0,0},{0,0}));
+    EXPECT_TRUE(sensor_tester.set_loop_test({Sensor_set::inactive,Sensor_set::inactive},
+                                            {Sensor_test::inactive,Sensor_test::inactive}));
+
+}
+#endif
+
+typedef Sensor_set  _set;
+typedef Sensor_test _test;
+
+struct APBSensorTestStruct {
+    std::vector<Sensor_set> sensor_sets;
+    std::vector<Sensor_test> sensor_tests;
+};
+
+std::vector<APBSensorTestStruct> full_apb_3_sensor_test_vector = {
+
+        { { _set::inactive,  _set::inactive,  _set::inactive},      // Sensors
+          { _test::inactive, _test::inactive, _test::inactive,      // Down Signal Sensors
+            _test::inactive, _test::inactive, _test::inactive }},   // Up   Signal Sensors
+
+        { { _set::active,    _set::inactive,  _set::inactive},      // Sensors
+          { _test::inactive, _test::inactive, _test::inactive,      // Down Signal Sensors
+            _test::active,   _test::active,   _test::active }},     // Up   Signal Sensors
+
+        { { _set::active,    _set::active,    _set::inactive},      // Sensors
+          { _test::inactive, _test::inactive, _test::inactive,      // Down Signal Sensors
+            _test::active,   _test::active,   _test::active }},     // Up   Signal Sensors
+
+        { { _set::inactive,  _set::active,    _set::inactive},      // Sensors
+          { _test::inactive, _test::inactive, _test::inactive,      // Down Signal Sensors
+            _test::inactive, _test::active,   _test::active }},     // Up   Signal Sensors
+
+        { { _set::inactive,  _set::active,    _set::active},        // Sensors
+          { _test::inactive, _test::inactive, _test::inactive,      // Down Signal Sensors
+            _test::inactive, _test::active,   _test::active }},     // Up   Signal Sensors
+
+        { { _set::inactive,  _set::inactive,  _set::active},        // Sensors
+          { _test::inactive, _test::inactive, _test::inactive,      // Down Signal Sensors
+            _test::inactive, _test::inactive, _test::active }},     // Up   Signal Sensors
+
+        { { _set::inactive,  _set::inactive,  _set::inactive},      // Sensors
+          { _test::inactive, _test::inactive, _test::inactive,      // Down Signal Sensors
+            _test::inactive, _test::inactive, _test::inactive }},   // Up   Signal Sensors
+
+};
+
+
+
+
+TEST(Apb_logic,full_apb_3_sensor) {
+
+    Sensor_base sensor_1_;
+    Sensor_base sensor_2_;
+    Sensor_base sensor_3_;
+
+
+
+    Full_apb apb_test({&sensor_1_, &sensor_2_,&sensor_3_});
+
+
+    // Do initial indeterminate tests
+    EXPECT_TRUE(sensor_1_.is_indeterminate());
+    EXPECT_TRUE(sensor_2_.is_indeterminate());
+    EXPECT_TRUE(sensor_3_.is_indeterminate());
+
+
+    const uint8_t num_sensors_ = 3;
+
+    for(auto i=0;i < num_sensors_;i++) {
+        EXPECT_TRUE(apb_test.down_tumbledown_num(i).is_indeterminate());
+        EXPECT_TRUE(apb_test.up_tumbledown_num(i).is_indeterminate());
+    }
+
+
+
+    // Create a tester helper to simplify following code
+    Logic_sensor_test sensor_tester_down(apb_test,
+                                    {&sensor_1_,&sensor_2_,&sensor_3_},
+                                    {&apb_test.down_tumbledown_num(0),&apb_test.down_tumbledown_num(1),&apb_test.down_tumbledown_num(2),
+                                     &apb_test.up_tumbledown_num(0),&apb_test.up_tumbledown_num(1),&apb_test.up_tumbledown_num(2),
+                                    });
+
+    Logic_sensor_test sensor_tester_up(apb_test,
+                                    {&sensor_1_,&sensor_2_,&sensor_3_},
+                                    {&apb_test.down_tumbledown_num(0),&apb_test.down_tumbledown_num(1),&apb_test.down_tumbledown_num(2),
+                                     &apb_test.up_tumbledown_num(0),&apb_test.up_tumbledown_num(1),&apb_test.up_tumbledown_num(2),
+
+//                                    {&apb_test.up_tumbledown_num(2),   &apb_test.up_tumbledown_num(1),   &apb_test.up_tumbledown_num(0),
+//                                     &apb_test.down_tumbledown_num(2), &apb_test.down_tumbledown_num(1), &apb_test.down_tumbledown_num(0),
+                                    });
+
+
+    uint16_t vector_idx;
+    for(int i=0;i<2;i++) {
+
+        vector_idx=0;
+
+        std::cout << "\nDown Cycle " << (i+1) << "\n";
+        for(auto const& test_vector: full_apb_3_sensor_test_vector) {
+            std::cout << "vector_idx:" << vector_idx << "\n";
+
+            std::cout << "Set : ";
+            for (auto const& set_: test_vector.sensor_sets) {
+                std::cout << int(set_) << ",";
+            }
+            std::cout << "\nTest : ";
+            for (auto const& test_: test_vector.sensor_tests) {
+                std::cout << int(test_) << ",";
+            }
+            std::cout << "\n";
+
+            EXPECT_TRUE(sensor_tester_down.set_loop_test(   test_vector.sensor_sets,
+                                                            test_vector.sensor_tests));
+
+
+            vector_idx++;
+        }
+    }
+
+    vector_idx=0;
+
+    for(int i=0;i<2;i++) {
+
+        vector_idx=0;
+
+        std::cout << "\nUp Cycle " << (i+1) << "\n";
+        for(auto const& test_vector: full_apb_3_sensor_test_vector) {
+            std::cout << "vector_idx:" << vector_idx << "\n";
+
+            std::vector<Sensor_set> reversed_sensors(   test_vector.sensor_sets.rbegin(),
+                                                        test_vector.sensor_sets.rend());
+
+            std::vector<Sensor_test> reversed_tests(    test_vector.sensor_tests.rbegin(),
+                                                        test_vector.sensor_tests.rend());
+
+            std::cout << "Set : ";
+            for (auto const& set_: reversed_sensors) {
+                std::cout << int(set_) << ",";
+            }
+            std::cout << "\nTest : ";
+            for (auto const& test_: reversed_tests) {
+                std::cout << int(test_) << ",";
+            }
+            std::cout << "\n";
+
+
+            EXPECT_TRUE(sensor_tester_up.set_loop_test( reversed_sensors,
+                                                        reversed_tests));
+
+
+            vector_idx++;
+        }
+    }
+
 }

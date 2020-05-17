@@ -130,5 +130,24 @@ const char* mr_signals::get_aspect_string(const Head_aspect aspect)
     return "e"; // error
 }
 
+#ifdef ARDUINO
 
+namespace mr_signals {
 
+Print &operator <<(Print &obj, mr_signals::Head_aspect aspect )
+{
+    switch(aspect) {
+        case Head_aspect::unknown:  obj.print(F("unknown")); break;
+        case Head_aspect::dark:     obj.print(F("dark")); break;
+        case Head_aspect::red:      obj.print(F("red")); break;
+        case Head_aspect::yellow:   obj.print(F("yellow")); break;
+        case Head_aspect::green:    obj.print(F("green")); break;
+        default:                    obj.print(F("invalid")); break;
+    }
+
+    return obj;
+}
+
+}
+
+#endif

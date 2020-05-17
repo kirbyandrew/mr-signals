@@ -96,6 +96,9 @@ protected:
     Full_apb() {} // Cannot instantiate without parameters
     std::vector<Sensor_interface*> protected_sensors_;
 
+    std::vector<Sensor_interface*>::size_type num_sensors_;   // protected_sensors_ count
+
+
     // TODO: Should this be a vector or something else?  Could even just be a simple array, are they iterated over?
     std::vector<Sensor_base*> down_tumbledown_sensors_;
     std::vector<Sensor_base*> up_tumbledown_sensors_;

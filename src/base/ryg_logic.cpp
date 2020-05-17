@@ -6,6 +6,7 @@
  */
 
 #include <ryg_logic.h>
+#include "mr_signals.h"
 #include "algorithm.h"
 
 using namespace mr_signals;
@@ -50,6 +51,7 @@ Simple_ryg_logic::Simple_ryg_logic(Logic_collection& collection,
  */
 void Simple_ryg_logic::loop()
 {
+
     head_.loop();
 
     // Check that the state of all protected sensors are known
@@ -92,9 +94,13 @@ void Simple_ryg_logic::loop()
 
         // If the new aspect determined for this head differs from its current
         // value, request that the head change
+
         if (aspect != head_.get_aspect()) {
+
+            Serial << head_.get_name() << F(" (") << head_.get_aspect() << F(") new aspect : (") << aspect << F(")\n");
+
             if (head_.request_aspect(aspect) == true) {
-    //                Debug << F("Mast ") << name_.c_str() << head.head->GetName() << F(" changed to ") << GetAspectString(head.head -> GetAspect()) << F("\n");
+                Serial << F("(Accepted)\n");
             }
         }
     }
@@ -181,7 +187,7 @@ void Interlocked_ryg_logic::loop()
 
             if (Head_aspect::red != head_.get_aspect()) {
                 if(head_.request_aspect(Head_aspect::red)) {
-//                    Debug << F("Head ") << name_ << F(" lever normal; set to red\n");
+                    Serial << head_.get_name() << F(" lever normal; set to red\n");
                 }
             }
         }

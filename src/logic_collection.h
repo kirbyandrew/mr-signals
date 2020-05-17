@@ -28,6 +28,8 @@ public:
     /// so that the interface can be attached to the collection.
     Logic_collection(size_t num_logic_interfaces)
     {
+        init_size_ = num_logic_interfaces;
+
         logic_functions_.reserve(num_logic_interfaces);
     }
 
@@ -54,6 +56,11 @@ public:
         return logic_functions_.size();
     }
 
+    size_t logic_init_size()
+    {
+        return init_size_;
+    }
+
 
     /// To be called in the main Arduino loop() so that the logic functions
     /// are periodically run
@@ -66,6 +73,7 @@ public:
 
 private:
     std::vector<Logic_interface *> logic_functions_;
+    size_t init_size_;
 
 };
 

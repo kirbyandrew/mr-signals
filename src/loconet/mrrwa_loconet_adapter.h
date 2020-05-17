@@ -108,6 +108,13 @@ public:
 
 
     /**
+     * Call in Arduino sketch setup() function
+     */
+
+    void setup();
+
+
+    /**
      * Processing loop; to be called as often as possible to process incoming
      * messages and transmit outgoing messages
      */
@@ -161,7 +168,7 @@ public:
      *
      * #define NUM_SENSORS 50
      *
-     * Mrrwa_loconet_adapter loconet_adpater(loconet,NUM_SENSORS);
+     * Mrrwa_loconet_adapter loconet_adpater(loconet,<tx_pin>,NUM_SENSORS);
      * ...
      * (all initialization here)
      * ...
@@ -170,6 +177,8 @@ public:
      * }
      */
     size_t sensor_count();
+
+    size_t sensor_init_size();
 
      /**
      * Get an indication of time elapsed since system startup in units of
@@ -239,6 +248,8 @@ private:
     /// Observer pattern; the adapter class is the subject, each sensor is an observer
     std::vector<Loconet_sensor*> sensors_;
 
+    size_t sensor_init_size_;       // The size the sensor vector is initialized to (to compare against its final size)
+
 
     Runtime_ms next_tx_time_ms_;    // Next time from get_time_ms() that the
                                     // adapter will attempt to transmit a
@@ -256,6 +267,9 @@ private:
 
     /// Instance of the MRWWA Loconet Class used by the adapter
     LocoNetClass& loconet_;
+
+    /// Pin used to transmit
+    int tx_pin_;
 
 };
 

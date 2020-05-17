@@ -66,8 +66,10 @@ namespace mr_signals {
 
 
 Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
-        next_tx_time_ms_(0), send_gp_on_time_ms_(0), tx_errors_(0), loconet_(loconet)
+        sensor_init_size_(num_sensors), next_tx_time_ms_(0), send_gp_on_time_ms_(0),
+        tx_errors_(0), loconet_(loconet), tx_pin_(tx_pin)
 {
+
     if(num_sensors) {
         sensors_.reserve(num_sensors);
     }
@@ -77,11 +79,14 @@ Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,int tx_pin, s
     // Register the adapter with the pointer used by the MRRWA callbacks
     ::set_mrrwa_loconet_adapter(this);
 
-    loconet_.init(tx_pin);
-
     send_gp_on_time_ms_ = get_time_ms() + POWER_ON_DELAY_MS;
+
 }
 
+void Mrrwa_loconet_adapter::setup()
+{
+    loconet_.init(tx_pin_);
+}
 
 void Mrrwa_loconet_adapter::loop()
 {
@@ -132,6 +137,11 @@ size_t Mrrwa_loconet_adapter::sensor_count()
     return sensors_.size();
 }
 
+size_t Mrrwa_loconet_adapter::sensor_init_size()
+{
+    return sensor_init_size_;
+}
+
 
 
 
@@ -174,7 +184,15 @@ void Mrrwa_loconet_adapter::receive_loop()
             if (val < 16)
                 Serial << F("0");
 
-            Serial << HEX << unsigned(val) << " ";
+#ifdef ARDUINO
+
+            // TODO: Fix this mess.  HEX stream doesn't work in Arduino
+            Serial.print(val,HEX);
+            Serial.print(' ');
+#else
+            Serial << HEX << unsigned(val) << " "; // Works in Windows, garbage in arduino
+            Serial << HEX << val << " ";
+#endif
         }
 
         Serial << endl;
@@ -207,7 +225,8 @@ void Mrrwa_loconet_adapter::send_global_power_on_loop()
 
         if(get_time_ms() > send_gp_on_time_ms_) {
 
-            if(true == loconet_.reportPower(1)) {
+            //if(true == loconet_.reportPower(1)) {
+            if(true == send_opc_gp_on()) {  //## TODO - why wasn't the true condition error found in UT?
                 send_gp_on_time_ms_ = 0;
             }
             else {

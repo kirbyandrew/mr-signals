@@ -1,0 +1,23 @@
+
+07:23:28.877: [B2 1A 40 17]  Sensor L2S53 (T1107) is Low.  (BDL16 # 4, DS5; DS54/DS64/SE8c # 7, AuxC/A3/DS05).
+
+07:23:28.887: [B0 6D 30 12]  Requesting Switch at L2T110 to Closed (Output On).
+07:23:28.897: [B0 6C 10 33]  Requesting Switch at L2T109 to Thrown (Output On).
+07:23:28.947: [B0 6D 20 02]  Requesting Switch at L2T110 to Closed (Output Off).
+07:23:28.957: [B0 6C 00 23]  Requesting Switch at L2T109 to Thrown (Output Off).
+07:23:29.123: [B0 6D 30 12]  Requesting Switch at L2T110 to Closed (Output On).
+07:23:29.141: [B0 6C 10 33]  Requesting Switch at L2T109 to Thrown (Output On).
+07:23:29.224: [B0 6D 20 02]  Requesting Switch at L2T110 to Closed (Output Off).
+07:23:29.242: [B0 6C 00 23]  Requesting Switch at L2T109 to Thrown (Output Off).
+
+
+[B2 1A 50 07]  Sensor L2S53 (T1107) is High.  (BDL16 # 4, DS5; DS54/DS64/SE8c # 7, AuxC/A3/DS05).
+
+[B0 6D 10 32]  Requesting Switch at L2T110 to Thrown (Output On).
+[B0 6C 30 13]  Requesting Switch at L2T109 to Closed (Output On).
+[B0 6D 00 22]  Requesting Switch at L2T110 to Thrown (Output Off).
+[B0 6C 20 03]  Requesting Switch at L2T109 to Closed (Output Off).
+[B0 6D 10 32]  Requesting Switch at L2T110 to Thrown (Output On).
+[B0 6C 30 13]  Requesting Switch at L2T109 to Closed (Output On).
+[B0 6D 00 22]  Requesting Switch at L2T110 to Thrown (Output Off).
+[B0 6C 20 03]  Requesting Switch at L2T109 to Closed (Output Off).

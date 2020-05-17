@@ -23,12 +23,17 @@ namespace mr_signals {
 Loconet_sensor::Loconet_sensor(const char *name, const Loconet_address address, Loconet_adapter_interface& ln_adapter) :
         address_(address)
 {
+
     // Ensure this sensor is observing the Loconet adapter
     ln_adapter.attach_sensor(this);
 
+
 //#pragma warning(disable: 4996)
-    strncpy(name_, name, ln_sensor_name_len);
-    name_[ln_sensor_name_len] = '\0';
+    //strncpy(name_, name, ln_sensor_name_len);  // TODO: strlcpy?
+    strlcpy(name_,name,sizeof(name_));
+
+//    name_[ln_sensor_name_len] = '\0';
+
 }
 
 

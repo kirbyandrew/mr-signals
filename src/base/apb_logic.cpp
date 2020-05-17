@@ -80,21 +80,274 @@ Full_apb::Full_apb(std::initializer_list<Sensor_interface *> const & protected_s
     // Check protection against an empty initializer list being passed
     // The tumbledown sensor get functions have to return something, so
     // at least one sensor in each is always allocated
-    size_t num_sensors = (protected_sensors_.size() > 0) ? protected_sensors_.size() : 1;
+    num_sensors_ = (protected_sensors_.size() > 0) ? protected_sensors_.size() : 1;
 
 
-    down_tumbledown_sensors_.reserve(num_sensors);
-    up_tumbledown_sensors_.reserve(num_sensors);
+    down_tumbledown_sensors_.reserve(num_sensors_);
+    up_tumbledown_sensors_.reserve(num_sensors_);
+
+    for(uint8_t i=0;i < num_sensors_; i++) {
+        down_tumbledown_sensors_.push_back(new Sensor_base());
+        up_tumbledown_sensors_.push_back(new Sensor_base());
+    }
 
 }
 
+#include <iostream>
+
 void Full_apb::loop() {
+
+    // See
+    // http://www.lundsten.dk/us_signaling/abs_apb/index.html
+    // Protection of following trains
+
+    // Basic logic
+    // In the opposite direction of travel of trains within the block...
+    // Iterate over all sensors to find the 'last' train (occupied block)
+    // All tumbledown sensors before that are active
+    // None after the last train are active
+    // Clear all tumbledowns if no sensors are active
+
+    /*
+     * x             x             x             x             x
+     * | ---- x ---- | ---- x ---- | ---- x ---- | ---- x ---- |---- x ----|
+     *               x             x             x             x           x
+     *
+     *
+     *===>
+     * x             x             x             x             x
+     * | ---- A ---- | ---- x ---- | ---- x ---- | ---- x ---- |---- x ----|
+     *               A             A             A             A           A
+     *
+     * (inverse)
+     * A             A             A             A             A         <====
+     * | ---- A ---- | ---- x ---- | ---- x ---- | ---- x ---- |---- x ----|
+     *               x             x             x             x           x
+     *
+     *
+     *
+     *           =======>
+     * x             x             x             x             x
+     * | ---- A ---- | ---- A ---- | ---- x ---- | ---- x ---- |---- x ----|
+     *               A             A             A             A           A
+     *
+     *
+     *                   =======>
+     * x             x             x             x             x
+     * | ---- x ---- | ---- A ---- | ---- x ---- | ---- x ---- |---- x ----|
+     *               x             A             A             A           A
+     *
+     *( inverse)
+     *                                              <========
+     * A             A             A             A             x
+     * | ---- x ---- | ---- A ---- | ---- x ---- | ---- x ---- |---- x ----|
+     *               x             x             x             x           x
+     *
+     *
+     *
+     *                          =======>
+     * x             x             x             x             x
+     * | ---- x ---- | ---- A ---- | ---- A ---- | ---- x ---- |---- x ----|
+     *               x             A             A             A           A
+     *
+     *
+     *                                 =======>
+     * x             x             x             x             x
+     * | ---- x ---- | ---- x ---- | ---- A ---- | ---- x ---- |---- x ----|
+     *               x             x             A             A           A
+     *
+     *
+     *                                       =======>
+     * x             x             x             x             x
+     * | ---- x ---- | ---- x ---- | ---- A ---- | ---- A ---- |---- x ----|
+     *               x             x             A             A           A
+     *
+     *
+     * =======>                                =======>
+     * x             x             x             x             x
+     * | ---- A ---- | ---- x ---- | ---- A ---- | ---- x ---- |---- x ----|
+     *               A             A             A             A           A
+     *
+     */
+
+    /*  //If [0] & no up tumbledowns
+     *  //    Set all up tumbledowns
+     *
+     *  //If [-1] & no down tumbledowns
+     *  //    Set all down tumbledowns
+     *
+     * If any up tumbledowns...
+     *   tumbledown_up = false
+     *   for sensor0 to sensorN-1
+     *      if sensorx is clear & ! tumbledown_up:
+     *         up_tumbledown[x].clear
+     *      else
+     *         tumbledown_up = true
+     *         up_tumbledown[x].set
+     * Else if protected_sensor[0]  // No up tumbledowns
+     *   Set all up tumbledowns``// train entering in down direction
+     *
+     * If any down tumbledowns...
+     *   tumbledown_down = false
+     *   for sensorN-1 to sensor0
+     *      if sensorx is clear & ! tumbledown_down:
+     *         down_tumbledown[x].clear
+     *      else
+     *         tumbledown_down = true
+     *         down_tumbledown[x].set
+     * Else if protected_sensors[-1] // No down tumbledowns
+     *   Set all down tumbledowns  // train entering in up direction
+     *
+     *
+     */
+
+
+    // Do nothing until the state of the sensors is known
+    if (std::none_of(protected_sensors_.begin(),
+                    protected_sensors_.end(),
+                    [](Sensor_interface* sensor) {return sensor->is_indeterminate();})) {
+
+
+        if (std::none_of(protected_sensors_.begin(),
+                        protected_sensors_.end(),
+                        [](Sensor_interface* sensor) {return sensor->is_active();})) {
+
+            std::cout << "No sensors active, clear all tumbledowns\n";
+
+            // All sensors are clear, clear all tumbledowns
+            for(auto const& tumbledown : up_tumbledown_sensors_) {
+                tumbledown -> set_state(false);
+            }
+
+            for(auto const& tumbledown : down_tumbledown_sensors_) {
+                tumbledown -> set_state(false);
+            }
+        }
+        else {
+
+            // At least one sensor is active; run the APB logic
+
+            if (std::any_of(up_tumbledown_sensors_.begin(),
+                            up_tumbledown_sensors_.end(),
+                            [](Sensor_interface* sensor) {return sensor->is_active();})) {
+
+                // There is an active up tumbledown sensor; run across the protected
+                // sensors to determine which ones should be set and which not
+
+                std::cout << "Up tumbledowns are active\n";
+
+                bool set_all_subsequent_tumbledowns = false;
+
+                // Loop through sensors in the 'down' direction (from 0 to n-1)
+                for(std::vector<Sensor_interface*>::size_type i = 0; i != num_sensors_; i++) {
+                    if(!protected_sensors_[i]->is_active() && !set_all_subsequent_tumbledowns) {
+                        // Block is clear, clear the corresponding protecting tumbledown
+                        up_tumbledown_sensors_[i]->set_state(false);
+                    }
+                    else {
+                        // Block is not clear; set tumbledown and record this to set
+                        // all subsequent ones
+                        set_all_subsequent_tumbledowns = true;
+                        up_tumbledown_sensors_[i]->set_state(true);
+                    }
+                }
+            }
+/*
+            else if (protected_sensors_[0]->is_active()) {
+
+
+                std::cout << "Up tumbledowns are inactive, sensor[0] active, set up tumbledowns\n";
+
+
+                // There are no up tumbledowns, but the first block in the down direction
+                // is active, so assume a train is entering in the down direction
+                // and set the up tumbledowns
+                for(auto const& tumbledown: up_tumbledown_sensors_) {
+                    tumbledown->set_state(true);
+                }
+            }
+*/
+            else if (protected_sensors_[num_sensors_-1]->is_active()) {
+
+                std::cout << "Up tumbledowns are inactive, sensor[n-1] active, set down tumbledowns\n";
+
+
+                // There are no down tumbledowns actives, but the first block in the up direction
+                // is active, so assume a train is entering in the up direction
+                // and set the down tumbledowns
+                for(auto const& tumbledown: down_tumbledown_sensors_) {
+                    tumbledown->set_state(true);
+                }
+            }
+
+
+
+            if (std::any_of(down_tumbledown_sensors_.begin(),
+                            down_tumbledown_sensors_.end(),
+                            [](Sensor_interface* sensor) {return sensor->is_active();})) {
+
+                std::cout << "Down tumbledowns are active\n";
+
+
+                // There is an active down tumbledown sensor; run across the protected
+                // sensors to determine which ones should be set and which not
+                bool set_all_subsequent_tumbledowns = false;
+
+                // Loop through sensors in the 'down' direction (from 0 to n-1)
+                for(int i = num_sensors_-1; i >= 0 ; --i) {
+                    if(!protected_sensors_[i]->is_active() && !set_all_subsequent_tumbledowns) {
+                        // Block is clear, clear the corresponding protecting tumbledown
+                        down_tumbledown_sensors_[i]->set_state(false);
+                    }
+                    else {
+                        // Block is not clear; set tumbledown and record this to set
+                        // all subsequent ones
+                        set_all_subsequent_tumbledowns = true;
+                        down_tumbledown_sensors_[i]->set_state(true);
+                    }
+                }
+
+
+            }
+/*
+            else if (protected_sensors_[num_sensors_-1]->is_active()) {
+
+                std::cout << "Down tumbledowns are inactive, sensor[n-1] active, set down tumbledowns\n";
+
+
+                // There are no down tumbledowns actives, but the first block in the up direction
+                // is active, so assume a train is entering in the up direction
+                // and set the down tumbledowns
+                for(auto const& tumbledown: down_tumbledown_sensors_) {
+                    tumbledown->set_state(true);
+                }
+            }
+*/
+            else if (protected_sensors_[0]->is_active()) {
+
+
+                std::cout << "Down tumbledowns are inactive, sensor[0] active, set up tumbledowns\n";
+
+
+                // There are no up tumbledowns, but the first block in the down direction
+                // is active, so assume a train is entering in the down direction
+                // and set the up tumbledowns
+                for(auto const& tumbledown: up_tumbledown_sensors_) {
+                    tumbledown->set_state(true);
+                }
+            }
+
+        }
+    }
+    else {
+        // At least one sensor indeterminate; skip
+    }
 
 }
 
 
 Sensor_interface& Full_apb::down_tumbledown_num(uint8_t num) {
-    size_t idx = num < down_tumbledown_sensors_.size() ? down_tumbledown_sensors_.size() : 0;
+    size_t idx = num < down_tumbledown_sensors_.size() ? num : 0;
 
     // Can't cast a pointer to a reference directly; so use intermediate local pointer
     Sensor_interface *sensor = static_cast<Sensor_interface*>(down_tumbledown_sensors_[idx]);
@@ -102,93 +355,10 @@ Sensor_interface& Full_apb::down_tumbledown_num(uint8_t num) {
 }
 
 Sensor_interface& Full_apb::up_tumbledown_num(uint8_t num) {
-    size_t idx = num < up_tumbledown_sensors_.size() ? up_tumbledown_sensors_.size() : 0;
+    size_t idx = num < up_tumbledown_sensors_.size() ? num : 0;
 
     // Can't cast a pointer to a reference directly; so use intermediate local pointer
     Sensor_interface *sensor = static_cast<Sensor_interface*>(up_tumbledown_sensors_[idx]);
     return *sensor;
 }
 
-/*
- * // vector::at
-#include <iostream>
-#include <vector>
-
-int main ()
-{
-  std::vector<int> myvector (10);   // 10 zero-initialized ints
-
-  // assign some values:
-  for (unsigned i=0; i<myvector.size(); i++)
-    myvector.at(i)=i;
-
-  std::cout << "myvector contains:";
-  for (unsigned i=0; i<myvector.size(); i++)
-    std::cout << ' ' << myvector.at(i);
-  std::cout << '\n';
-
-  return 0;
-}
- */
-
-/*
- * tatic_cast
-static_cast is used for cases where you basically want to reverse an implicit conversion, with a few restrictions and additions. static_cast performs no runtime checks. This should be used if you know that you refer to an object of a specific type, and thus a check would be unnecessary. Example:
-
-void func(void *data) {
-  // Conversion from MyClass* -> void* is implicit
-  MyClass *c = static_cast<MyClass*>(data);
-  ...
-}
-
-int main() {
-  MyClass c;
-  start_thread(&func, &c)  // func(&c) will be called
-      .join();
-}
-In this example, you know that you passed a MyClass object, and thus there isn't any need for a runtime check to ensure this.
-
-dynamic_cast
-dynamic_cast is useful when you don't know what the dynamic type of the object is. It returns a null pointer if the object referred to doesn't contain the type casted to as a base class (when you cast to a reference, a bad_cast exception is thrown in that case).
-
-if (JumpStm *j = dynamic_cast<JumpStm*>(&stm)) {
-  ...
-} else if (ExprStm *e = dynamic_cast<ExprStm*>(&stm)) {
-  ...
-}
-You cannot use dynamic_cast if you downcast (cast to a derived class) and the argument type is not polymorphic. For example, the following code is not valid, because Base doesn't contain any virtual function:
-
-struct Base { };
-struct Derived : Base { };
-int main() {
-  Derived d; Base *b = &d;
-  dynamic_cast<Derived*>(b); // Invalid
-}
-An "up-cast" (cast to the base class) is always valid with both static_cast and dynamic_cast, and also without any cast, as an "up-cast" is an implicit conversion.
-
-Regular Cast
-These casts are also called C-style cast. A C-style cast is basically identical to trying out a range of sequences of C++ casts, and taking the first C++ cast that works, without ever considering dynamic_cast. Needless to say, this is much more powerful as it combines all of const_cast, static_cast and reinterpret_cast, but it's also unsafe, because it does not use dynamic_cast.
-
-In addition, C-style casts not only allow you to do this, but they also allow you to safely cast to a private base-class, while the "equivalent" static_cast sequence would give you a compile-time error for that.
-
-Some people prefer C-style casts because of their brevity. I use them for numeric casts only, and use the appropriate C++ casts when user defined types are involved, as they provide stricter checking.
-
-shareimprove this answer
-edited Jul 9 '17 at 3:23
-
-proski
- *
- */
-
-
-/*
-protected:
-    Full_apb() {} // Cannot instantiate without parameters
-    std::vector<Sensor_interface*> protected_sensors_;
-
-    // TODO: Should this be a vector or something else?  Could even just be a simple array, are they iterated over?
-    std::vector<Sensor_base*> down_tumbledown_sensors;
-    std::vector<Sensor_base*> up_tumbledown_sensors;
-};
-
-*/
