@@ -36,6 +36,9 @@ enum _EndLineCode { endl };
 inline Print &operator <<(Print &obj, _EndLineCode arg) { obj.println(); return obj; }
 
 
+// Nasty hack for debug output.  Only allows one thing printed at a time, but provides simple run-time enable for debug
+//template<class T> inline Print &operator <<=(Print &obj, T arg) { if(debug__){obj.print(arg);} return obj; }
+
 
 
 #else // !ARDUINO (e.g. unit test build)
@@ -52,5 +55,7 @@ inline Print &operator <<(Print &obj, _EndLineCode arg) { obj.println(); return 
 
 #endif // !ARDUINO
 
+extern bool debug__;
+#define Debug(x) if(debug__) {Serial << x;}
 
 #endif // SRC_MR_SIGNALS_H_

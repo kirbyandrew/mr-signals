@@ -49,9 +49,9 @@ void notifySensor(uint16_t Address, uint8_t State)
 {
 
 #ifdef ARDUINO
-    Serial << F("Sensor Msg: ") << Address << F(" - ") << (State ? F("Active") : F("Inactive")) << F("\n");
+    Serial << F("Sensor: ") << Address << F(" - ") << (State ? F("Active") : F("Inactive"));
 #else
-    Serial << F("Sensor Msg: ") << std::dec << Address << F(" - ") << (State ? F("Active") : F("Inactive")) << F("\n");
+    Serial << F("Sensor: ") << std::dec << Address << F(" - ") << (State ? F("Active") : F("Inactive"));
 #endif
 
     if(nullptr!= loconet_adapter) {
@@ -59,7 +59,28 @@ void notifySensor(uint16_t Address, uint8_t State)
     }
 }
 
+void notifySwitchRequest(uint16_t Address, uint8_t output, uint8_t direction) {
+#ifdef ARDUINO
 
+    if(Address >= 1017 && Address <=1020) {
+        Serial << F("Sensor Interrogation");
+    }
+    else {
+        Serial << F("Switch: ") << Address << F(" - ") << (direction ? F("Closed") : F("Thrown"));
+    }
+
+    Serial << F(" (Output ") << (output ? F("On") : F("Off")) << F(")");
+
+#else
+
+#endif
+}
+/*
+  case OPC_SW_REQ:
+    if(notifySwitchRequest)
+      notifySwitchRequest( Address, LnPacket->srq.sw2 & OPC_SW_REQ_OUT, LnPacket->srq.sw2 & OPC_SW_REQ_DIR ) ;
+    break ;
+*/
 
 
 namespace mr_signals {
@@ -153,7 +174,7 @@ void Mrrwa_loconet_adapter::notify_sensors(Loconet_address address, bool state) 
         [address, state](Loconet_sensor * sensor) {
 
         if (sensor->notify(address, state)) {
-            Serial << F("Set Sensor ") << sensor->get_name() << " -> " << (state ? F("Active\n") : F("Inactive\n"));
+            Serial << F("\nSet Sensor ") << sensor->get_name() << " -> " << (state ? F("Active") : F("Inactive"));
 
             return true;    // Found the sensor, stop the find_if() loop
         }
@@ -189,14 +210,22 @@ void Mrrwa_loconet_adapter::print_lnMsg(lnMsg *ln_packet, const char *prefix, bo
         Serial.print(val,HEX);
         Serial.print(' ');
 #else
-        Serial << HEX << unsigned(val) << " "; // Works in Windows, garbage in arduino
-        Serial << HEX << val << " ";
+        Serial << HEX << unsigned(val) << F(" "); // Works in Windows, garbage in arduino
+        Serial << HEX << val << F(" ");
 #endif
     }
 
-    Serial << endl;
+    if(!print_checksum) {
+        Serial << F("cs "); // If not printing the checksum, print 'cs' to align with when it is
+    }
+
+    if(OPC_LONG_ACK == ln_packet->data[0]) {
+        Serial << F(" LONG_ACK!");
+    }
 
 
+    // Let the calling function add any desired decoding before the CR/LF
+//    Serial << endl;
 }
 
 
@@ -213,12 +242,12 @@ void Mrrwa_loconet_adapter::receive_loop()
         print_lnMsg(ln_packet,"LN RX",true);
 
         if(OPC_LONG_ACK == ln_packet->data[0]) {
-            Serial << F("LONG_ACK!") << endl;
             long_acks_++;
         }
 
-
         loconet_.processSwitchSensorMessage(ln_packet);
+
+        Serial << endl;  // Clean up formatting
     }
 }
 
@@ -234,8 +263,12 @@ void Mrrwa_loconet_adapter::transmit_loop()
 
             if(LN_DONE != loconet_.send(&ln_msg)) {
                 tx_errors_++;
-                Serial << "-TX error";
+                Serial << "-TX error" << endl;
             }
+            else {
+                Serial << endl;
+            }
+
 
             next_tx_time_ms_ = get_time_ms() + transmit_delay_ms_;
         }

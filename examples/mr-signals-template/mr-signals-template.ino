@@ -15,10 +15,12 @@
 using namespace mr_signals;
 
 extern Mrrwa_loconet_adapter loconet;
-//extern Logic_collection logic_collection;
+//extern Logic_collection logic_coll;
+
+bool debug__=false;
 
 const int tx_pin = 47;
-const size_t num_sensors = 20;
+const size_t num_sensors = 40;
 const size_t tx_buffer_size = 600;
 
 Mrrwa_loconet_adapter loconet(LocoNet, tx_pin, num_sensors, tx_buffer_size);
@@ -57,17 +59,17 @@ void setup() {
   Serial.println(freeRam());
 
   check_init_size("Sensors", loconet.sensor_count(), loconet. sensor_init_size());
-  check_init_size("Logics", logic_collection.logic_count(),logic_collection.logic_init_size());
+  check_init_size("Logics", logic_coll.logic_count(),logic_coll.logic_init_size());
   
   Serial << F("\n");
 }
 
 void loop() {
 
-  static Runtime_ms last_stat_report = 0;
+  static Runtime_ms last_stat_report = 5000;  // Print first report 5s after startup
 
   loconet.loop();
-  logic_collection.loop();
+  logic_coll.loop();
   command_line_loop();
 
   if(millis() > last_stat_report) {
@@ -78,7 +80,7 @@ void loop() {
     Serial << F("-Tx error count : ") << loconet.get_tx_error_count() << endl;
     Serial << F("-LONG_ACKs rcvd : ") << loconet.get_long_ack_count() << endl;
     
-    last_stat_report = millis() + 20000;
+    last_stat_report = millis() + 60000;
   }
   
 }
@@ -140,6 +142,12 @@ void send_test() {
   LocoNet.send(&SendPacket);
 }
 
+void debug_toggle() {
+  debug__ ^= 1;
+
+  Serial.print("Debug now : ");
+  Serial.println(debug__);
+}
 
 typedef struct {
   String command;
@@ -155,6 +163,7 @@ Command_line_entry command_lines[] = {
   { "yel","Set select Heads to yellow", &yellow_heads },
   { "green", "Set select Heads to green", &green_heads },
   { "send_test", "Quick ln send", &send_test },
+  { "debug","Toggle debug output", &debug_toggle},
 
 };
 
@@ -186,48 +195,5 @@ void command_line_loop()
         command_lines[i].func();
       }
     }
-/*
-    if (comdata == "sensors" || comdata == "s")
-    {
-      loconet.PrintSensors();
-    }
-    else if (comdata == "masts")
-    {
-      mast_list.PrintMasts();
-    }
-    else if(comdata == "on")
-    {
-     loconet.SendOpcGpOn();
-    }
-    else if(comdata == "loconet")
-    {
-      loconet.DebugPrint();
-    }
-    else if(comdata == "r")
-    {
-      head_3c.SetAspect(headAspect::red);
-      head_5a.SetAspect(headAspect::red);
-      head_5b.SetAspect(headAspect::red);
-      head_24b.SetAspect(headAspect::red);
-      head_24c.SetAspect(headAspect::red);
-    }
-    else if(comdata == "y")
-    {
-      head_3c.SetAspect(headAspect::yellow);
-      head_5a.SetAspect(headAspect::yellow);
-      head_5b.SetAspect(headAspect::yellow);
-      head_24b.SetAspect(headAspect::yellow);
-      head_24c.SetAspect(headAspect::yellow);
-    }
-    else if(comdata == "g")
-    {
-      head_3c.SetAspect(headAspect::green);
-      head_5a.SetAspect(headAspect::green);
-      head_5b.SetAspect(headAspect::green);
-      head_24b.SetAspect(headAspect::green);
-      head_24c.SetAspect(headAspect::green);
-    }
-  }
-*/  
 }
 

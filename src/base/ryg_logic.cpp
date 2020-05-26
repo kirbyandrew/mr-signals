@@ -100,7 +100,7 @@ void Simple_ryg_logic::loop()
             Serial << head_.get_name() << F(" (") << head_.get_aspect() << F(") new aspect : (") << aspect << F(")\n");
 
             if (head_.request_aspect(aspect) == true) {
-                Serial << F("(Accepted)\n");
+
             }
         }
     }
@@ -181,8 +181,13 @@ void Interlocked_ryg_logic::loop()
             }
         }
         else {
-            // Lever is normal (inactive), clear any hold and set the aspect to red
 
+            head_.loop();   // Still need to run the head's loop; this is
+                            // done in the branch above in
+                            // the call to Simple_ryg_logic::loop();
+                            // TODO: Why wasn't this bug found?
+
+            // Lever is normal (inactive), clear any hold and set the aspect to red
             head_.set_held(false);
 
             if (Head_aspect::red != head_.get_aspect()) {

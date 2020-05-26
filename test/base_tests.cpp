@@ -24,6 +24,7 @@
 #include "triple_pin_head.h"
 #include "apb_logic.h"
 #include "arduino_mock.h"
+#include "loconet_double_switch_head.h"
 
 #include "mast_test_helpers.h"
 
@@ -1640,5 +1641,108 @@ TEST(Apb_logic,full_apb_3_sensor) {
             vector_idx++;
         }
     }
+}
+
+
+Sensor_base lever_1;    // Have to be globals to use in template Two_lever_interlock
+Sensor_base lever_2;
+
+
+TEST(LeverInterlock, BasicTest) {
+
+    Logic_collection logic(1);
+
+
+    Two_lever_interlock<Sensor_base,&lever_1,Sensor_base,&lever_2> interlock(logic);
+
+    logic.loop();
+
+    // Check expected initial values
+    EXPECT_TRUE(lever_1.is_indeterminate());
+    EXPECT_TRUE(lever_2.is_indeterminate());
+
+    EXPECT_FALSE(interlock.lock_first.is_indeterminate());  // locks should not be indeterminate, even if the inputs are ind
+    EXPECT_FALSE(interlock.lock_second.is_indeterminate());
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Locks are inactive when inputs are indeterminate
+    EXPECT_FALSE(interlock.lock_second.is_active());
+
+    lever_1.set_state(false);
+    lever_2.set_state(false);
+    logic.loop();
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Locks are inactive when inputs are inactive
+    EXPECT_FALSE(interlock.lock_second.is_active());
+
+    // Lever 1 is thrown
+    lever_1.set_state(true);
+    lever_2.set_state(false);
+    logic.loop();
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Should lock lever 2. but leave lever 1 unlocked
+    EXPECT_TRUE(interlock.lock_second.is_active());
+
+    // Throw lever 2 while lever 1 is active and 2 is locked
+    lever_1.set_state(true);
+    lever_2.set_state(true);
+    logic.loop();
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Lever 2 should remain locked, 1 one remains unlocked
+    EXPECT_TRUE(interlock.lock_second.is_active());
+
+    // Release lever 1 while 2 is locked
+    lever_1.set_state(false);
+    lever_2.set_state(true);
+    logic.loop();
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Lever ones should not be locked out, but
+    EXPECT_TRUE(interlock.lock_second.is_active());         // lever two remains locked
+
+    // Throw lever 1 again while lever 2 still active
+    lever_1.set_state(true);
+    lever_2.set_state(true);
+    logic.loop();
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Expect the same
+    EXPECT_TRUE(interlock.lock_second.is_active());
+
+    // Release lever 2 while lever 1 is active
+    lever_1.set_state(true);
+    lever_2.set_state(false);
+    logic.loop();
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Expect the same
+    EXPECT_TRUE(interlock.lock_second.is_active());
+
+
+    // Release both levers
+    lever_1.set_state(false);
+    lever_2.set_state(false);
+    logic.loop();
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Lock should be released on both levers
+    EXPECT_FALSE(interlock.lock_second.is_active());
+
+
+    // Now throw lever 2 instead
+    lever_1.set_state(false);
+    lever_2.set_state(true);
+    logic.loop();
+    EXPECT_TRUE(interlock.lock_first.is_active());         // Should lock lever 1, but leave lever 2 unlocked
+    EXPECT_FALSE(interlock.lock_second.is_active());
+
+    // Throw lever 1 while lever 2 is active and 1 is locked
+    lever_1.set_state(true);
+    lever_2.set_state(true);
+    logic.loop();
+    EXPECT_TRUE(interlock.lock_first.is_active());         // Lever 1 remains locked, lever 2 unlocked
+    EXPECT_FALSE(interlock.lock_second.is_active());
+
+    // Release lever 2 while 1 is locked
+    lever_1.set_state(true);
+    lever_2.set_state(false);
+    logic.loop();
+    EXPECT_TRUE(interlock.lock_first.is_active());         // 1 remains locked
+    EXPECT_FALSE(interlock.lock_second.is_active());
+
+    // Release both levers
+    lever_1.set_state(false);
+    lever_2.set_state(false);
+    logic.loop();
+    EXPECT_FALSE(interlock.lock_first.is_active());         // Lock should be released on both levers
+    EXPECT_FALSE(interlock.lock_second.is_active());
+
 
 }
