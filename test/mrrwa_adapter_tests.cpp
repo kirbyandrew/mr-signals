@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstring>
 #include <stdio.h>
+//#include <limits>
 
 #include "mrrwa_loconet_adapter.h"
 #include "loconet_switch.h"
@@ -75,9 +76,11 @@ TEST(MrrwaAdapter,BasicMappingCalls)
 
     init_millis();  // Reset the millis() clock
 
-    EXPECT_CALL(loconet_mock,init(tx_pin)); // Expect the call to init() when loconet_adapter() is instantiated
+    EXPECT_CALL(loconet_mock,init(tx_pin));
+
 
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+    loconet_adapter.setup();
 
     // Test the basic expected calls
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
@@ -105,6 +108,7 @@ TEST(MrrwaAdapter,InitRetries)
 
     EXPECT_CALL(loconet_mock,init(tx_pin));
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+    loconet_adapter.setup();
 
 
 
@@ -137,6 +141,7 @@ TEST(MrrwaAdapter,NoMsgsReceivedLoopTest)
     init_millis();
     EXPECT_CALL(loconet_mock,init(tx_pin));
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+    loconet_adapter.setup();
 
 
 
@@ -159,6 +164,7 @@ TEST(MrrwaAdapter,MsgReceivedLoopTest)
 
     EXPECT_CALL(loconet_mock,init(tx_pin));
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+    loconet_adapter.setup();
 
 
     init_millis();
@@ -195,6 +201,7 @@ TEST(MrrwaAdapter,ReceivedDebugTest)
 
     EXPECT_CALL(loconet_mock,init(tx_pin));
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+    loconet_adapter.setup();
 
     // Attach one sensor, ID 50
     Loconet_sensor sensor1("Sen1",50,loconet_adapter);
@@ -240,8 +247,17 @@ TEST(MrrwaAdapter,ReceivedDebugTest)
     std::string output = testing::internal::GetCapturedStdout();
     std::cout << "output = '" << output << "'" << std::endl;
 
-    EXPECT_EQ("LN RX : B2 18 70 25 \nSensor Msg: 50 - Active\nSet Sensor Sen1 -> Active\n"\
-              "LN RX : B2 23 60 35 \nSensor Msg: 72 - Inactive\n",output);
+    /*
+    std::cout << "Minimum value for Runtime_ms: " << std::numeric_limits<Runtime_ms>::min() << '\n';
+    std::cout << "Maximum value for Runtime_ms: " << std::numeric_limits<Runtime_ms>::max() << '\n';
+    std::cout << "Runtime_ms is signed: " << std::numeric_limits<Runtime_ms>::is_signed << '\n';
+    std::cout << "Non-sign bits in FT: " << std::numeric_limits<Runtime_ms>::digits << '\n';
+*/
+
+    EXPECT_EQ("00000000:LN RX B2 18 70 25 Sensor: 50 - Active\nSet Sensor Sen1 -> Active\n"\
+              "00000000:LN RX B2 23 60 35 Sensor: 72 - Inactive\n",output);
+
+
 
 }
 
@@ -264,6 +280,7 @@ TEST(MrrwaAdapter,AttachingSensors)
     // Create an adapter object, dimension it to hold 2 sensors
     EXPECT_CALL(loconet_mock,init(tx_pin));
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,sensor_count);
+    loconet_adapter.setup();
 
 
     // With no sensors attached, the count should be 0
@@ -355,6 +372,7 @@ TEST(MrrwaAdapter,SensorDebug)
 
     // Create an adapter object, dimension it to hold 2 sensors
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,sensor_count);
+    loconet_adapter.setup();
 
     Loconet_sensor sensor1("Sensor1",1,loconet_adapter);    // Ensure the constrained name string prints correctly
     Loconet_sensor sensor2("S2",2,loconet_adapter);
@@ -404,6 +422,7 @@ TEST(MrrwaAdapter,TxLoopTest)
 
     EXPECT_CALL(loconet_mock,init(tx_pin));
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,0,buffer_size);
+    loconet_adapter.setup();
 
     // Try to queue 3 messages.  With a buffer of 8, only two 3-byte long
     // messsages (OPC_SW_REQ is 4, the CRC is not stored) can be
@@ -466,6 +485,7 @@ TEST(MrrwaAdapter,LocoNetSwitchTest)
 
     EXPECT_CALL(loconet_mock,init(tx_pin));
     Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,0,buffer_size);
+    loconet_adapter.setup();
 
     Loconet_switch switch1(0x123,&loconet_adapter);
 

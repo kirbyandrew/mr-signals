@@ -5,7 +5,7 @@
 #include <mr_signals.h>
 #include <LocoNet.h>
 #include "loconet/mrrwa_loconet_adapter.h"
-
+#include "sensor_interface.h"
 /*
 #include "logic_collection.h"
 
@@ -81,13 +81,26 @@ void loop() {
     Serial << F("-LONG_ACKs rcvd : ") << loconet.get_long_ack_count() << endl;
     
     last_stat_report = millis() + 60000;
-  }
-  
+  }  
+}
+
+void print_sensor_states(Sensor_interface &sensor) {
+
+  Serial.print(sensor.is_active());
+  Serial.print(F(" (ind : "));
+  Serial.print(sensor.is_indeterminate());
+  Serial.println(")");
 }
 
 void print_sensors() {
   Serial.println(F("Print sensor states"));
   loconet.print_sensors();
+
+  Serial.print(F("bkwd_yelta_apb.up_tumbledown(): "));
+  print_sensor_states(bkwd_yelta_apb.up_tumbledown());
+
+  Serial.print(F("bkwd_yelta_apb.down_tumbledown(): "));
+  print_sensor_states(bkwd_yelta_apb.down_tumbledown());
 }
 
 void loconet_on() {

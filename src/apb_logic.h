@@ -10,6 +10,7 @@
 
 #include <vector>
 #include "base/logic_interface.h"
+#include "logic_collection.h"
 #include "sensor_interface.h"
 
 namespace mr_signals
@@ -49,7 +50,8 @@ namespace mr_signals
  * <-- = Up/North/East Direction
  * | sensor_1 | sensor_15 | sensor_3 |
  *
- * Simple_apb apb_logic({&sensor_1, &sensor_15, & sensor 3});
+ * Logic_collection collection(1);
+ * Simple_apb apb_logic(collection, {&sensor_1, &sensor_15, & sensor 3});
  *
  * The add apb_logic.down_tumbledown() as a sensor to every signal protecting
  * travel in the --> direction and apb_logic.up_tumbledown as a sensor to every
@@ -58,7 +60,7 @@ namespace mr_signals
 class Simple_apb : public Logic_interface
 {
 public:
-    Simple_apb(std::initializer_list<Sensor_interface *> const & protected_sensors);
+    Simple_apb(Logic_collection& collection, std::initializer_list<Sensor_interface *> const & protected_sensors);
 
     void loop() override;
 
@@ -85,7 +87,7 @@ protected:
 class Full_apb : public Logic_interface
 {
 public:
-    Full_apb(std::initializer_list<Sensor_interface *> const & protected_sensors);
+    Full_apb(Logic_collection& collection, std::initializer_list<Sensor_interface *> const & protected_sensors);
 
     void loop() override;
 

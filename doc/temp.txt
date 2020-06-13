@@ -6,6 +6,11 @@ Setup
 - What was edited?
 
 
+Use of vectors of pointers instead of std::reference_wrapper (save memory)
+
+Concept of passing Logic_collection to all logics  
+
+
 Logic Collection
 
 

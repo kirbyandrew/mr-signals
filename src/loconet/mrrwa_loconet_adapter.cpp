@@ -187,7 +187,7 @@ void Mrrwa_loconet_adapter::notify_sensors(Loconet_address address, bool state) 
 void Mrrwa_loconet_adapter::print_lnMsg(lnMsg *ln_packet, const char *prefix, bool print_checksum)
 {
     char timestamp[12];
-    sprintf(timestamp,"%08lu",get_time_ms());   // TODO: Why does this throw a warning in Eclipse of being a unsigned int??
+    sprintf(timestamp,"%08lu",get_time_ms());   // TODO: Why does this throw a warning in Eclipse of being a unsigned int??.  Look at http://arduiniana.org/libraries/streaming/
 
     Serial << timestamp << ":";
 
@@ -211,7 +211,7 @@ void Mrrwa_loconet_adapter::print_lnMsg(lnMsg *ln_packet, const char *prefix, bo
         Serial.print(' ');
 #else
         Serial << HEX << unsigned(val) << F(" "); // Works in Windows, garbage in arduino
-        Serial << HEX << val << F(" ");
+      //  Serial << HEX << val << F(" ");
 #endif
     }
 

@@ -24,7 +24,7 @@
 #include "triple_pin_head.h"
 #include "apb_logic.h"
 #include "arduino_mock.h"
-#include "loconet_double_switch_head.h"
+//#include "loconet_double_switch_head.h"
 
 #include "mast_test_helpers.h"
 
@@ -1334,13 +1334,16 @@ or
 =====> represents a train as it crosses the sensor boundaries
 */
 
-#if 0
+
+// TODO: Get this working!
+// TODO: Convert to using Logic_collection
 TEST(Apb_logic,simple_apb) {
 
     Sensor_base sensor_1_;
     Sensor_base sensor_2_;
+    Logic_collection collection(1);
 
-    Simple_apb apb_test({&sensor_1_, &sensor_2_});
+    Simple_apb apb_test(collection, {&sensor_1_, &sensor_2_});
 
 
     // Do initial indeterminate tests
@@ -1492,7 +1495,7 @@ TEST(Apb_logic,simple_apb) {
                                             {Sensor_test::inactive,Sensor_test::inactive}));
 
 }
-#endif
+
 
 typedef Sensor_set  _set;
 typedef Sensor_test _test;
@@ -1542,10 +1545,12 @@ TEST(Apb_logic,full_apb_3_sensor) {
     Sensor_base sensor_1_;
     Sensor_base sensor_2_;
     Sensor_base sensor_3_;
+    // TODO: Convert to using Logic_collection loop
+    Logic_collection collection(1);
 
 
 
-    Full_apb apb_test({&sensor_1_, &sensor_2_,&sensor_3_});
+    Full_apb apb_test(collection,{&sensor_1_, &sensor_2_,&sensor_3_});
 
 
     // Do initial indeterminate tests

@@ -97,10 +97,10 @@ void Simple_ryg_logic::loop()
 
         if (aspect != head_.get_aspect()) {
 
-            Serial << head_.get_name() << F(" (") << head_.get_aspect() << F(") new aspect : (") << aspect << F(")\n");
+            Head_aspect orig_aspect = head_.get_aspect();
 
             if (head_.request_aspect(aspect) == true) {
-
+                Serial << head_.get_name() << F(" (") << orig_aspect << F(") new aspect : (") << aspect << F(")\n");
             }
         }
     }
@@ -172,10 +172,16 @@ void Interlocked_ryg_logic::loop()
                 if(nullptr!=automated_lever_) {
                     if(automated_lever_->is_active()) {
                         is_automated = true;
+                        head_.set_held(false);
                     }
                 }
 
                 if(false == is_automated ) {
+
+                    if(false==head_.is_held()) {
+                        Serial << head_.get_name() << F(" held at red\n");
+                    }
+
                     head_.set_held(true);
                 }
             }

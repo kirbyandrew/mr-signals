@@ -13,10 +13,11 @@ using namespace mr_signals;
 
 
 
-Simple_apb::Simple_apb(std::initializer_list<Sensor_interface *> const & protected_sensors) :
+Simple_apb::Simple_apb(Logic_collection& collection, std::initializer_list<Sensor_interface *> const & protected_sensors) :
         protected_sensors_(protected_sensors)
 {
     // Leave the tumbdown_sensors in their default (indeterminate) state
+    collection.attach_logic_interface(this);
 }
 
 void Simple_apb::loop()
@@ -74,8 +75,11 @@ Sensor_interface& Simple_apb::up_tumbledown()
 
 
 
-Full_apb::Full_apb(std::initializer_list<Sensor_interface *> const & protected_sensors) :
+Full_apb::Full_apb(Logic_collection& collection, std::initializer_list<Sensor_interface *> const & protected_sensors) :
     protected_sensors_(protected_sensors) {
+
+
+    collection.attach_logic_interface(this);
 
     // Check protection against an empty initializer list being passed
     // The tumbledown sensor get functions have to return something, so
