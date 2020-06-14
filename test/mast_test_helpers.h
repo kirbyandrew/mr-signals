@@ -337,7 +337,7 @@ public:
 
         //TODO: Add range checks of inputs against the underlying data structures
 
-        int idx = 0;
+        size_t idx = 0;
         // Set sensors to passed set values
         for(auto &val: set_sensor_values) {
 
@@ -364,8 +364,12 @@ public:
         // Loop the logic
         logic_.loop();
 
-        idx = 0;
-        for(auto &val: test_sensor_values) {
+        //idx = 0;
+        //for(auto &val: test_sensor_values) {
+        // Debug; loop over the test sensors values passed and print the current
+        // sensor value that they will be tested against
+        // TODO: Make debug optional
+        for(idx=0; idx < test_sensor_values.size(); idx++) {
 
             if(sensors_to_test_[idx]->is_indeterminate()) {
                 std::cout << "(id) ";

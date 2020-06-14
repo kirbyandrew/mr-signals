@@ -9,7 +9,7 @@
 #define SRC_HELPERS_H_
 
 #include "sensor_interface.h"
-//#include "base/logic_interface.h"
+#include "base/logic_interface.h"
 #include "logic_collection.h"
 #include "base/head_interface.h"
 
@@ -94,7 +94,9 @@ private:
  *
  * Sensor_base sensor_1;
  * Sensor_base sensor_2;
- * Two_lever_interlock<Sensor_base, &sensor_1, Sensor_base, &sensor_2> sensor_1_2_interlock;
+ * Logic_collection logic(1);
+ *
+ * Two_lever_interlock<Sensor_base, &sensor_1, Sensor_base, &sensor_2> sensor_1_2_interlock(logic);
  *
  */
 
@@ -104,8 +106,8 @@ class Two_lever_interlock : public Logic_interface {
 
 public:
 
-    Two_lever_interlock (Logic_collection& collection) {
-        collection.attach_logic_interface(this);
+    Two_lever_interlock (Logic_collection& collection) :
+        Logic_interface(collection) {
 
         // Initialize sensors to inactive so that they don't cause
         // any logic problems by staying indeterminate

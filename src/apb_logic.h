@@ -68,7 +68,6 @@ public:
     Sensor_interface& up_tumbledown();
 
 protected:
-    Simple_apb() {} // Cannot instantiate without parameters
     std::vector<Sensor_interface*> protected_sensors_;
     Sensor_base down_tumbledown_sensor;
     Sensor_base up_tumbledown_sensor;
@@ -95,7 +94,6 @@ public:
     Sensor_interface& up_tumbledown_num(uint8_t num);
 
 protected:
-    Full_apb() {} // Cannot instantiate without parameters
     std::vector<Sensor_interface*> protected_sensors_;
 
     std::vector<Sensor_interface*>::size_type num_sensors_;   // protected_sensors_ count

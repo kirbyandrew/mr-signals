@@ -22,19 +22,17 @@ namespace mr_signals {
  *
  */
 
+class Logic_collection;
+
 class Logic_interface {
 public:
 
+    // Forces all derived classes to initialize with a Logic_collection object
+    Logic_interface(Logic_collection &collection);
+
+
     virtual void loop() = 0;
 
-    // TODO: Should this be a Logic interface factory, or force passing a Logic_collection
-    // to the constructor?
-    //
-    // e.g. https://stackoverflow.com/questions/57472952/design-pattern-flexibility-issue-factory-method
-    // https://stackoverflow.com/questions/26866867/circular-reference-of-two-class-objects-in-c
-    // https://softwareengineering.stackexchange.com/questions/323130/if-a-has-b-and-b-holds-reference-of-a-is-it-a-flawed-design-need-to-be-fixed
-    // https://softwareengineering.stackexchange.com/questions/306518/when-is-a-circular-reference-to-a-parent-pointer-acceptable
-    //
     virtual ~Logic_interface () = default;
 
 };

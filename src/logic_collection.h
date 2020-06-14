@@ -10,7 +10,6 @@
 
 #include <vector>   // std::vector<>
 #include <cstddef>  // size_t
-#include "base/logic_interface.h"
 
 namespace mr_signals {
 
@@ -26,22 +25,14 @@ public:
     /// does not continue to inefficiently grow.
     /// A reference to the Logic_Collection is passed to each Logic_interface
     /// so that the interface can be attached to the collection.
-    Logic_collection(size_t num_logic_interfaces)
-    {
-        init_size_ = num_logic_interfaces;
-
-        logic_functions_.reserve(num_logic_interfaces);
-    }
+    Logic_collection(size_t num_logic_interfaces);
 
     /**
      * Attaches an instace of a Logic interface to the logic collection
      * Normally called by the Logic_interface collector
      * @param interface
      */
-    void attach_logic_interface(Logic_interface *interface)
-    {
-        logic_functions_.push_back(interface);
-    }
+    void attach_logic_interface(Logic_interface *interface);
 
     /**
      * Get the number of logic_functions that are attached to the
@@ -51,25 +42,14 @@ public:
      *
      * @return
      */
-    size_t logic_count()
-    {
-        return logic_functions_.size();
-    }
+    size_t logic_count();
 
-    size_t logic_init_size()
-    {
-        return init_size_;
-    }
+    size_t logic_init_size();
 
 
     /// To be called in the main Arduino loop() so that the logic functions
     /// are periodically run
-    void loop()
-    {
-        for(Logic_interface* logic : logic_functions_)  {
-            logic->loop();
-        }
-    }
+    void loop();
 
 private:
     std::vector<Logic_interface *> logic_functions_;
@@ -77,7 +57,7 @@ private:
 
 };
 
-};
+}; /* namespace mr_signals */
 
 
 

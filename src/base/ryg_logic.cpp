@@ -16,24 +16,27 @@ using namespace mr_signals;
 // - cost of passing initializer list
 // comparison of individual classes for 'head_logic' rather than masts that collect it
 
-
+// With a protected head
 Simple_ryg_logic::Simple_ryg_logic(Logic_collection& collection,
         Head_interface& head,
         Head_interface& protected_head,
         std::initializer_list<Sensor_interface *> const & protected_sensors) :
+        Logic_interface(collection),
         head_(head), protected_head_(&protected_head), protected_sensors_(
                 protected_sensors)
 {
-        collection.attach_logic_interface(this);
+
 }
 
+// Without a protected head
 Simple_ryg_logic::Simple_ryg_logic(Logic_collection& collection,
         Head_interface& head,
         std::initializer_list<Sensor_interface *> const & protected_sensors) :
+        Logic_interface(collection),
         head_(head), protected_head_(nullptr), protected_sensors_(
                 protected_sensors)
 {
-    collection.attach_logic_interface(this);
+
 }
 
 /**
