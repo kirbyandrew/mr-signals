@@ -1,3 +1,16 @@
+#include <Bridge.h>
+#include <BridgeClient.h>
+#include <BridgeServer.h>
+#include <BridgeSSLClient.h>
+#include <BridgeUdp.h>
+#include <Console.h>
+#include <FileIO.h>
+#include <HttpClient.h>
+#include <Mailbox.h>
+#include <Process.h>
+#include <YunClient.h>
+#include <YunServer.h>
+
 
 #include <StandardCplusplus.h>
 
@@ -6,11 +19,7 @@
 #include <LocoNet.h>
 #include "loconet/mrrwa_loconet_adapter.h"
 #include "sensor_interface.h"
-/*
-#include "logic_collection.h"
-
-#include "configs/blackwood_south.h"  // Update this as neccessary; must follow mr_signals.h
-*/
+#include "pin_switch.h"
 
 using namespace mr_signals;
 
@@ -29,6 +38,11 @@ Mrrwa_loconet_adapter loconet(LocoNet, tx_pin, num_sensors, tx_buffer_size);
 #include "configs/blackwood_south.cc"
 
 void command_line_loop();
+
+Pin_switch pin1(setup_coll,12);
+Pin_switch pin2(setup_coll,13);
+
+Double_switch_head all_sensors_head("sens", pin1, pin2);
 
 
 int freeRam () {
@@ -53,6 +67,8 @@ void setup() {
 
   loconet.setup();
 
+  setup_coll.execute();
+
   Serial.begin(57600);
   Serial.println("Blackwood South V1.0");
   Serial.write("free RAM : ");
@@ -62,6 +78,8 @@ void setup() {
   check_init_size("Logics", logic_coll.logic_count(),logic_coll.logic_init_size());
   
   Serial << F("\n");
+
+  all_sensors_head.request_aspect(Head_aspect::red);
 }
 
 void loop() {
@@ -121,7 +139,8 @@ void red_heads() {
 
   head_1107a.request_aspect(Head_aspect::red);
   head_1107b.request_aspect(Head_aspect::red);
-  
+
+  all_sensors_head.request_aspect(Head_aspect::red);
 }
 
 void yellow_heads() {
@@ -141,6 +160,8 @@ void green_heads() {
 
   head_1107a.request_aspect(Head_aspect::green);
   head_1107b.request_aspect(Head_aspect::red);  
+
+  all_sensors_head.request_aspect(Head_aspect::green);
 }
 
 void send_test() {

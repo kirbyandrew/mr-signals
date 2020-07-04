@@ -185,6 +185,8 @@ public:
 
     size_t sensor_init_size();
 
+    bool any_sensor_indeterminate();
+
      /**
      * Get an indication of time elapsed since system startup in units of
      * milliseconds
@@ -222,7 +224,7 @@ public:
      * Retrieve the transmit buffer high water mark
      * @return The maximum occupancy of the transmit buffer
      */
-    const std::size_t get_buffer_high_watermark() {
+    std::size_t get_buffer_high_watermark() {
         return tx_buffer_.loconet_tx_buffer_.high_watermark();
     }
 
@@ -230,7 +232,7 @@ public:
      * Retrieve the internal transmit error count
      * @return The tx error count
      */
-    const uint16_t get_tx_error_count() {
+    uint16_t get_tx_error_count() {
         return tx_errors_;
     }
 
@@ -238,7 +240,7 @@ public:
      * Retrieve the internal count of OPC_LONG_ACKs (error from command station in response to switch request) received
      * @return The long ack count
      */
-    const uint16_t get_long_ack_count() {
+    uint16_t get_long_ack_count() {
         return long_acks_;
     }
 
@@ -305,6 +307,8 @@ private:
 
     /// Pin used to transmit
     int tx_pin_;
+
+    bool any_sensor_indeterminate_;
 
 };
 

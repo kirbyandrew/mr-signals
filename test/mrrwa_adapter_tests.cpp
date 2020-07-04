@@ -680,3 +680,24 @@ TEST(MrrwaTxBuffer,Dequeue)
 
     EXPECT_EQ(0,std::memcmp(&read_msg,&msg3,2));
 }
+
+TEST(MrrwaSensorCheck, BasicTest) {
+
+    const uint8_t tx_pin=2;
+    const std::size_t buffer_size = 8;
+    LocoNetMock loconet_mock;
+
+    EXPECT_CALL(loconet_mock,init(tx_pin));
+    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,0,buffer_size);
+    loconet_adapter.setup();
+
+    Loconet_sensor sensor1("Sen1",50,loconet_adapter);
+    Loconet_sensor sensor2("Sen2",51,loconet_adapter);
+
+    EXPECT_TRUE(loconet_adapter.any_sensor_indeterminate());
+    sensor1.set_state(false);
+    EXPECT_TRUE(loconet_adapter.any_sensor_indeterminate());
+    sensor2.set_state(true);
+    EXPECT_FALSE(loconet_adapter.any_sensor_indeterminate());
+
+}

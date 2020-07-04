@@ -88,7 +88,7 @@ namespace mr_signals {
 
 Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
         sensor_init_size_(num_sensors), next_tx_time_ms_(0), send_gp_on_time_ms_(0),
-        tx_errors_(0), long_acks_(0), loconet_(loconet), tx_pin_(tx_pin)
+        tx_errors_(0), long_acks_(0), loconet_(loconet), tx_pin_(tx_pin), any_sensor_indeterminate_(true)
 {
 
     if(num_sensors) {
@@ -124,6 +124,21 @@ void Mrrwa_loconet_adapter::attach_sensor(Loconet_sensor* sensor)
     sensors_.push_back(sensor);
 }
 
+
+bool Mrrwa_loconet_adapter::any_sensor_indeterminate()  {
+
+
+    if(any_sensor_indeterminate_){
+        for (auto sensor : sensors_) {
+            if (sensor->is_indeterminate()) {
+                return true;
+            }
+        }
+    }
+
+    any_sensor_indeterminate_=false;
+    return(any_sensor_indeterminate_);
+}
 
 bool Mrrwa_loconet_adapter::send_opc_sw_req(Loconet_address address, bool thrown,bool on)
 {

@@ -1,4 +1,10 @@
-[Logic_interface||+loop()=0],
+[Logic_collection|-logic_functions : vector\<Logic_interface\>;-init_size : size_t|Logic_collection(num: size_t);+attach_logic_interface(Logic_interface) : void;+logic_count() : size_t;+logic_init_size() : size_t]
+[Logic_interface{bg:wheat}||Logic_interface(Logic_collection);_+loop()_]
+[Logic_collection]<>1-0..*>[Logic_interface]
 [Logic_interface]^-[Simple_ryg_logic|head_:Head_interface;protected_heads_:Head_interface;protected_sensor_:vector(Sensor_interface)|+loop()]
 [Simple_ryg_logic]<>-2>[Head_interface]
 [Simple_ryg_logic]<>-0..n>[Sensor_interface]
+[Logic_interface]^-[Simple_apb|-protected_sensors_:vector\<Sensor_interface\>|+Simple_apb(Logic_collection,initializer_list\<Sensor_interface\>);+loop():void;down_tumbledown():Sensor_interface;up_tumbledown():Sensor_interface]
+[Logic_interface]^-[Full_apb|-protected_sensors_:vector\<Sensor_interface\>|+Full_apb(Logic_collection,initializer_list\<Sensor_interface\>);+loop():void;down_tumbledown(int):Sensor_interface;up_tumbledown(int):Sensor_interface]
+[Logic_interface]^-[Two_lever_interlock\<T1,T2\> |lock_first:Sensor_base;lock_second:Sensor_base|Two_lever_interlock(Logic_collection);+loop()]
+
