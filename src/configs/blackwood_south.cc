@@ -38,7 +38,6 @@ Quadln_s_head head_##name(#name,head_##name##_sw1,head_##name##_sw2);
 using namespace mr_signals;
 
 
-Setup_collection setup_coll(3);
 
 
 Logic_collection logic_coll(35);

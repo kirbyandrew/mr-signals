@@ -87,7 +87,7 @@ namespace mr_signals {
 
 
 Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
-        sensor_init_size_(num_sensors), next_tx_time_ms_(0), send_gp_on_time_ms_(0),
+        sensor_init_size_(num_sensors), next_tx_time_ms_(0), send_gp_on_time_ms_(0), next_tx_window_time_(0),msg_tx_window_count_(0),
         tx_errors_(0), long_acks_(0), loconet_(loconet), tx_pin_(tx_pin), any_sensor_indeterminate_(true)
 {
 
@@ -160,6 +160,17 @@ bool Mrrwa_loconet_adapter::send_opc_sw_req(Loconet_address address, bool thrown
 bool Mrrwa_loconet_adapter::send_opc_gp_on()
 {
     return LN_DONE==loconet_.reportPower(1) ? true : false;
+}
+
+bool Mrrwa_loconet_adapter::insert_ln_tx_delay(uint8_t delay_ms) {
+
+    lnMsg SendPacket ;
+
+    // Reuse existing Idle OpCode (which is never transmitted) to indicate the insertion of a delay
+    SendPacket.data[ 0 ] = OPC_IDLE ;
+    SendPacket.data[ 1 ] = delay_ms ;
+
+    return(tx_buffer_.queue_loconet_msg(SendPacket));
 }
 
 
@@ -236,6 +247,7 @@ void Mrrwa_loconet_adapter::print_lnMsg(lnMsg *ln_packet, const char *prefix, bo
 
     if(OPC_LONG_ACK == ln_packet->data[0]) {
         Serial << F(" LONG_ACK!");
+        next_tx_time_ms_ += 100;
     }
 
 
@@ -274,20 +286,48 @@ void Mrrwa_loconet_adapter::transmit_loop()
 
         if(tx_buffer_.dequeue_loconet_msg(ln_msg)) {
 
-            print_lnMsg(&ln_msg,"LN TX",false);
 
-            if(LN_DONE != loconet_.send(&ln_msg)) {
-                tx_errors_++;
-                Serial << "-TX error" << endl;
+
+            if(OPC_IDLE == ln_msg.data[0]) {
+                // Treat as inserted delay with the delay duration being in the second byte
+                next_tx_time_ms_ = get_time_ms() + ln_msg.data[1];
             }
+
             else {
-                Serial << endl;
+
+                print_lnMsg(&ln_msg,"LN TX",false);
+
+                if(LN_DONE != loconet_.send(&ln_msg)) {
+                    tx_errors_++;
+                    Serial << "-TX error" << endl;
+                }
+                else {
+                    Serial << endl;
+                }
+
+                msg_tx_window_count_++;
+
+                next_tx_time_ms_ = get_time_ms() + transmit_delay_ms_;
             }
-
-
-            next_tx_time_ms_ = get_time_ms() + transmit_delay_ms_;
         }
     }
+
+
+    if(get_time_ms() >= next_tx_window_time_) {
+
+
+        if(msg_tx_window_count_ >= 10) {
+            // This means that messages are being sent very rapidly; insert a delay
+            next_tx_time_ms_ += 500;
+            Serial << endl << F("!!Inserting Tx delay due to high tx rate") << endl << endl;
+        }
+
+
+        msg_tx_window_count_ = 0;
+
+        next_tx_window_time_ = get_time_ms() + tx_window_duration_ms_;
+    }
+
 }
 
 

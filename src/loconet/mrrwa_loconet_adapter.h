@@ -155,6 +155,8 @@ public:
     bool send_opc_gp_on() override;
 
 
+    bool insert_ln_tx_delay(uint8_t) override;
+
     /**
      * Get the number of sensors attached to the adapter
      *
@@ -292,7 +294,12 @@ private:
 
     Runtime_ms send_gp_on_time_ms_;  // Next time from get_time_ms() to send the Global Power On message
 
+    Runtime_ms next_tx_window_time_;    // Next time to check the transmit count without a given time window
+
+    static const Runtime_ms tx_window_duration_ms_ = 500;
     static const Runtime_ms transmit_delay_ms_ = 10;
+
+    uint8_t msg_tx_window_count_;
 
     Mrrwa_loconet_tx_buffer tx_buffer_;
 

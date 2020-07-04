@@ -1,19 +1,4 @@
-#include <Bridge.h>
-#include <BridgeClient.h>
-#include <BridgeServer.h>
-#include <BridgeSSLClient.h>
-#include <BridgeUdp.h>
-#include <Console.h>
-#include <FileIO.h>
-#include <HttpClient.h>
-#include <Mailbox.h>
-#include <Process.h>
-#include <YunClient.h>
-#include <YunServer.h>
-
-
 #include <StandardCplusplus.h>
-
 
 #include <mr_signals.h>
 #include <LocoNet.h>
@@ -31,6 +16,9 @@ bool debug__=false;
 const int tx_pin = 47;
 const size_t num_sensors = 40;
 const size_t tx_buffer_size = 600;
+
+Setup_collection setup_coll(3);
+
 
 Mrrwa_loconet_adapter loconet(LocoNet, tx_pin, num_sensors, tx_buffer_size);
 
@@ -76,6 +64,7 @@ void setup() {
 
   check_init_size("Sensors", loconet.sensor_count(), loconet. sensor_init_size());
   check_init_size("Logics", logic_coll.logic_count(),logic_coll.logic_init_size());
+  check_init_size("Setups Funcs",setup_coll.count(), setup_coll.init_size());
   
   Serial << F("\n");
 

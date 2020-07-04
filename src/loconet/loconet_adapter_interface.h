@@ -64,6 +64,16 @@ public:
      */
     virtual bool send_opc_gp_on()= 0;
 
+
+    /**
+     * Allows the client to insert a delay in the LocoNet transmission stream
+     * to avoid filling the Command Station's Loconet -> DCC buffer.
+     * @param Delay in ms
+     * @return true if the tx delay was successfully queued
+     */
+
+    virtual bool insert_ln_tx_delay(uint8_t) = 0;
+
     virtual ~Loconet_adapter_interface() = default;
 
 

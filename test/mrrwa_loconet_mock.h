@@ -76,6 +76,8 @@ typedef union
 } lnMsg;
 
 
+#define OPC_IDLE          0x85
+
 #define OPC_INPUT_REP     0xb2
 #define OPC_INPUT_REP_CB  0x40  /* control bit, reserved otherwise      */
 #define OPC_INPUT_REP_SW  0x20  /* input is switch input, aux otherwise */
