@@ -32,10 +32,6 @@ class Loconet_adapter_interface
 {
 public:
 
-    /**
-     * General processing loop to be called within the main loop() function
-     */
-    virtual void loop() = 0;
 
     /**
      * Provides an interface to attach a loconet sensors to the loconet

@@ -10,9 +10,10 @@
 
 #include <vector>
 #include "loconet_adapter_interface.h"
+#include "setup_funcs.h"
+#include "loop_funcs.h"
 #include "loconet_sensor.h"
 #include "../base/circular_buffer.h"
-
 
 #ifdef ARDUINO
 
@@ -82,7 +83,7 @@ public:
  *
  */
 
-class Mrrwa_loconet_adapter : public Loconet_adapter_interface
+class Mrrwa_loconet_adapter : public Loconet_adapter_interface, Setup_interface, Loop_interface
 {
 public:
 
@@ -109,7 +110,8 @@ public:
      *                          A value of many hundreds is recommended.  The buffer high watermark
      *                          can be accessed by get_buffer_high_watermark and printed periodically.
      */
-    Mrrwa_loconet_adapter(LocoNetClass& loconet, int tx_pin=2, size_t num_sensors=0, size_t tx_buffer_size=100);
+    Mrrwa_loconet_adapter(Setup_collection&, Loop_collection&,
+                          LocoNetClass& loconet, int tx_pin=2, size_t num_sensors=0, size_t tx_buffer_size=100);
 
 
     /**

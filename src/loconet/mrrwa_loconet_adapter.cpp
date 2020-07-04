@@ -86,7 +86,10 @@ void notifySwitchRequest(uint16_t Address, uint8_t output, uint8_t direction) {
 namespace mr_signals {
 
 
-Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
+Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(Setup_collection& setup_collection,
+                                             Loop_collection& loop_collection,
+                                            LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
+        Setup_interface(setup_collection), Loop_interface(loop_collection),
         sensor_init_size_(num_sensors), next_tx_time_ms_(0), send_gp_on_time_ms_(0), next_tx_window_time_(0),msg_tx_window_count_(0),
         tx_errors_(0), long_acks_(0), loconet_(loconet), tx_pin_(tx_pin), any_sensor_indeterminate_(true)
 {

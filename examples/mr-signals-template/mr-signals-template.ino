@@ -18,9 +18,9 @@ const size_t num_sensors = 40;
 const size_t tx_buffer_size = 600;
 
 Setup_collection setup_coll(3);
+Loop_collection loop_coll(2);
 
-
-Mrrwa_loconet_adapter loconet(LocoNet, tx_pin, num_sensors, tx_buffer_size);
+Mrrwa_loconet_adapter loconet(setup_coll,loop_coll,LocoNet, tx_pin, num_sensors, tx_buffer_size);
 
 
 #include "configs/blackwood_south.cc"
@@ -53,8 +53,7 @@ void check_init_size(const char *term, size_t count, size_t init_size) {
 void setup() {
   // put your setup code here, to run once:
 
-  loconet.setup();
-
+ 
   setup_coll.execute();
 
   Serial.begin(57600);
@@ -75,7 +74,8 @@ void loop() {
 
   static Runtime_ms last_stat_report = 5000;  // Print first report 5s after startup
 
-  loconet.loop();
+ // loconet.loop();
+  loop_coll.execute();
   logic_coll.loop();
   command_line_loop();
 
