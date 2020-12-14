@@ -19,6 +19,69 @@ typedef uint16_t Loconet_address;
 typedef uint32_t Runtime_ms;
 
 /**
+ *  Interface class that defines all of the methods necessary for a
+ *  Loconet_adapter_interface to interact with a concrete instance
+ *  of a transmission manager (txmgr).
+ *
+ *  The primary purpose of the transmission manager is to encapsulate
+ *  the functionality required to
+ *
+ *  1. Provide a delay between transmitting messages on LocoNet to reduce flooding
+ *  2. Provide a different delay on startup (to allow all messages to be sent
+ *     without triggering a LONG_ACK by filling up the command station
+ *     LocoNet->DCC buffer) to regular operation
+ *  3. Provide an indication that a message should be retried (due to either
+ *     a transmission error or the asynchronous receipt of a LONG_ACK)
+ *  4. Increase the inter-message delay in the event of a retry to reduce
+ *     the probability of encountering another LONG_ACK
+ *
+ */
+
+class Loconet_txmgr_interface
+{
+
+public:
+    /**
+     * To be called in the transmission loop to determine whether the next
+     * LocoNet message should be sent
+     *
+     * @return true - inter-message delay has elapsed, can transmit
+     *         false - do not transmit yet
+     */
+    virtual bool is_tx_allowed() = 0;
+
+    /**
+     * Indicates that the last transmitted LocoNet message should be
+     * resent.
+     *
+     * The function should only be called when attempting to send a message.
+     * The retransmission strategy (e.g. number of retries) is implemented
+     * using each call to this function to progress.
+     *
+     * @return true - retransmit last message
+     *         false - do not retransmit, send next message
+     */
+    virtual bool is_retransmission() = 0;
+
+    /**
+     * Tells the manager that the client should retransmit the last
+     * transmitted LocoNet message
+     *
+     * is_retransmission() should return true for at least one call
+     * after this is called.
+     */
+    virtual void set_retransmit() = 0;
+
+    /**
+     * Allows a delay to be added before the next transmission (e.g. adds
+     * the passed delay to the time before is_tx_allowed() will next
+     * return true)
+     */
+    virtual void add_tx_delay(Runtime_ms) = 0;
+};
+
+
+/**
  *  Interface class that defines all of the methods neccessary for mr_signals to
  *  interact with a concrete instance of a object that communicates with
  *  Digitrax's LocoNet bus
@@ -80,6 +143,8 @@ public:
     virtual Runtime_ms get_time_ms() const = 0;
 
 };
+
+
 
 }
 

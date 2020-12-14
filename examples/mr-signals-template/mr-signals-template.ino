@@ -74,7 +74,7 @@ void loop() {
 
   static Runtime_ms last_stat_report = 5000;  // Print first report 5s after startup
 
- // loconet.loop();
+ 
   loop_coll.execute();
   logic_coll.loop();
   command_line_loop();
@@ -89,6 +89,13 @@ void loop() {
     
     last_stat_report = millis() + 60000;
   }  
+
+  // Check whether we need to change the sensor indicator to green
+  if(Head_aspect::red == all_sensors_head.get_aspect()) {
+    if(!loconet.any_sensor_indeterminate()) {
+      all_sensors_head.request_aspect(Head_aspect::green);  
+    }    
+  }
 }
 
 void print_sensor_states(Sensor_interface &sensor) {

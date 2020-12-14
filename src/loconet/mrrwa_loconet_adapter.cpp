@@ -91,7 +91,7 @@ Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(Setup_collection& setup_collection,
                                             LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
         Setup_interface(setup_collection), Loop_interface(loop_collection),
         sensor_init_size_(num_sensors), next_tx_time_ms_(0), send_gp_on_time_ms_(0), next_tx_window_time_(0),msg_tx_window_count_(0),
-        tx_errors_(0), long_acks_(0), loconet_(loconet), tx_pin_(tx_pin), any_sensor_indeterminate_(true)
+        retransmit_(0), tx_errors_(0), long_acks_(0), loconet_(loconet), tx_pin_(tx_pin), any_sensor_indeterminate_(true)
 {
 
     if(num_sensors) {
@@ -162,7 +162,9 @@ bool Mrrwa_loconet_adapter::send_opc_sw_req(Loconet_address address, bool thrown
 
 bool Mrrwa_loconet_adapter::send_opc_gp_on()
 {
-    return LN_DONE==loconet_.reportPower(1) ? true : false;
+    LN_STATUS status = loconet_.reportPower(1);
+
+    return (LN_DONE==status) ? true : false;
 }
 
 bool Mrrwa_loconet_adapter::insert_ln_tx_delay(uint8_t delay_ms) {
@@ -250,7 +252,6 @@ void Mrrwa_loconet_adapter::print_lnMsg(lnMsg *ln_packet, const char *prefix, bo
 
     if(OPC_LONG_ACK == ln_packet->data[0]) {
         Serial << F(" LONG_ACK!");
-        next_tx_time_ms_ += 100;
     }
 
 
@@ -273,6 +274,8 @@ void Mrrwa_loconet_adapter::receive_loop()
 
         if(OPC_LONG_ACK == ln_packet->data[0]) {
             long_acks_++;
+            retransmit_ = 1;
+            next_tx_time_ms_ += 100;
         }
 
         loconet_.processSwitchSensorMessage(ln_packet);
@@ -283,24 +286,32 @@ void Mrrwa_loconet_adapter::receive_loop()
 
 void Mrrwa_loconet_adapter::transmit_loop()
 {
-    lnMsg ln_msg;
+    bool transmit_msg = false;
 
     if(get_time_ms() >= next_tx_time_ms_) {
 
-        if(tx_buffer_.dequeue_loconet_msg(ln_msg)) {
 
+        if(retransmit_) {
+            // ln_msg_ is already loaded with the last transmitted message
+            transmit_msg = true;
+            retransmit_ --;
+        }
+        else if(tx_buffer_.dequeue_loconet_msg(ln_msg_)) {
+            transmit_msg = true;
+        }
 
+        if(transmit_msg) {
 
-            if(OPC_IDLE == ln_msg.data[0]) {
+            if(OPC_IDLE == ln_msg_.data[0]) {
                 // Treat as inserted delay with the delay duration being in the second byte
-                next_tx_time_ms_ = get_time_ms() + ln_msg.data[1];
+                next_tx_time_ms_ = get_time_ms() + ln_msg_.data[1];
             }
 
             else {
 
-                print_lnMsg(&ln_msg,"LN TX",false);
+                print_lnMsg(&ln_msg_,"LN TX",false);
 
-                if(LN_DONE != loconet_.send(&ln_msg)) {
+                if(LN_DONE != loconet_.send(&ln_msg_)) {
                     tx_errors_++;
                     Serial << "-TX error" << endl;
                 }
@@ -340,7 +351,6 @@ void Mrrwa_loconet_adapter::send_global_power_on_loop()
 
         if(get_time_ms() > send_gp_on_time_ms_) {
 
-            //if(true == loconet_.reportPower(1)) {
             if(true == send_opc_gp_on()) {  //## TODO - why wasn't the true condition error found in UT?
                 send_gp_on_time_ms_ = 0;
             }
@@ -349,7 +359,6 @@ void Mrrwa_loconet_adapter::send_global_power_on_loop()
             }
         }
     }
-
 }
 
 void Mrrwa_loconet_adapter::print_sensors() const

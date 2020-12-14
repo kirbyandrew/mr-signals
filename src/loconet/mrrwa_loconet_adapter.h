@@ -286,6 +286,8 @@ private:
     /// Observer pattern; the adapter class is the subject, each sensor is an observer
     std::vector<Loconet_sensor*> sensors_;
 
+    lnMsg ln_msg_;             // The last LN message transmitted
+
     size_t sensor_init_size_;       // The size the sensor vector is initialized to (to compare against its final size)
 
 
@@ -302,6 +304,8 @@ private:
     static const Runtime_ms transmit_delay_ms_ = 10;
 
     uint8_t msg_tx_window_count_;
+
+    uint8_t retransmit_;
 
     Mrrwa_loconet_tx_buffer tx_buffer_;
 

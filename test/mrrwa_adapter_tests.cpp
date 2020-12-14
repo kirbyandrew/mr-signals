@@ -63,6 +63,53 @@ uint8_t procSwitchSensorMessage( lnMsg *LnPacket )
 }
 
 
+
+class MrrwaAdapter_test : public ::testing::Test {
+
+
+protected:
+    void SetUp() override
+    {
+        SetupParams(0,100);
+    }
+
+    void SetupParams(size_t num_sensors, size_t tx_buffer_size)
+    {
+        TearDown(); // In case Setup() has already been called
+        setup_coll_ = new Setup_collection(1);
+        loop_coll_ = new Loop_collection(1);
+
+        init_millis();
+
+        EXPECT_CALL(loconet_mock,init(tx_pin));
+
+        loconet_adapter_ = new Mrrwa_loconet_adapter(*setup_coll_, *loop_coll_,
+                                                     loconet_mock,tx_pin,
+                                                     num_sensors,tx_buffer_size);
+        loconet_adapter_ -> setup();
+    }
+
+    void TearDown() override
+    {
+        delete setup_coll_;
+        delete loop_coll_;
+        delete loconet_adapter_;
+
+        setup_coll_ = nullptr;
+        loop_coll_ = nullptr;
+        loconet_adapter_ = nullptr;
+    }
+
+    const uint8_t tx_pin=2;
+    LocoNetMock loconet_mock;
+
+    Setup_collection *setup_coll_= nullptr;
+    Loop_collection *loop_coll_= nullptr;
+    Mrrwa_loconet_adapter *loconet_adapter_= nullptr;
+};
+
+
+
 /*
  * Ensure that init(), reportPower() and setup() are called when the
  * loconet_adapter is first initialized.
@@ -74,12 +121,15 @@ TEST(MrrwaAdapter,BasicMappingCalls)
     const uint8_t tx_pin=2;
     LocoNetMock loconet_mock;
 
-    init_millis();  // Reset the millis() clock
+    Setup_collection setup_coll(1);
+    Loop_collection loop_coll(1);
+
+
 
     EXPECT_CALL(loconet_mock,init(tx_pin));
 
-
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
+    init_millis();  // Reset the millis() clock (is used in the following constructor)
+    Mrrwa_loconet_adapter loconet_adapter(setup_coll, loop_coll, loconet_mock,tx_pin);
     loconet_adapter.setup();
 
     // Test the basic expected calls
@@ -98,19 +148,8 @@ TEST(MrrwaAdapter,BasicMappingCalls)
  * Test that at least one retry for sending the power on message is attempted
  * after the loconet adapter is initialized.
  */
-TEST(MrrwaAdapter,InitRetries)
+TEST_F(MrrwaAdapter_test,InitRetries)
 {
-    const uint8_t tx_pin=2;
-    LocoNetMock loconet_mock;
-
-
-    init_millis();
-
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
-    loconet_adapter.setup();
-
-
 
     // Setup so that the first call to reportPower fails, then the next succeeds
     EXPECT_CALL(loconet_mock,reportPower(1))
@@ -120,11 +159,10 @@ TEST(MrrwaAdapter,InitRetries)
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
 
 
-
-    // Run for long enough to allo the reportPower(1) be called twice
+    // Run for long enough to allow the reportPower(1) be called twice
     while(set_millis(millis()+1)  < (POWER_ON_DELAY_MS*3) ) {
 
-        loconet_adapter.loop();
+        loconet_adapter_->loop();
     }
 }
 
@@ -133,22 +171,13 @@ TEST(MrrwaAdapter,InitRetries)
  * If Loconet::receive returns NULL, Loconet::processSwitchSensorMessage()
  * should not be called
  */
-TEST(MrrwaAdapter,NoMsgsReceivedLoopTest)
+TEST_F(MrrwaAdapter_test,NoMsgsReceivedLoopTest)
 {
-    const uint8_t tx_pin=2;
-    LocoNetMock loconet_mock;
-
-    init_millis();
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
-    loconet_adapter.setup();
-
-
 
     EXPECT_CALL(loconet_mock,receive()).WillOnce(Return(nullptr));
     EXPECT_CALL(loconet_mock,processSwitchSensorMessage(_)).Times(0);
 
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 }
 
 /*
@@ -156,18 +185,9 @@ TEST(MrrwaAdapter,NoMsgsReceivedLoopTest)
  * If Loconet::receive returns non-null, processSwitchSensorMessage()
  * should be called, otherwise it should not be called
  */
-TEST(MrrwaAdapter,MsgReceivedLoopTest)
+TEST_F(MrrwaAdapter_test,MsgReceivedLoopTest)
 {
-    const uint8_t tx_pin=2;
     const int cycles = 5;       // Some number of loops to run
-    LocoNetMock loconet_mock;
-
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
-    loconet_adapter.setup();
-
-
-    init_millis();
 
     lnMsg msg;
 
@@ -181,7 +201,7 @@ TEST(MrrwaAdapter,MsgReceivedLoopTest)
 
     for(int i=0;i < cycles; i++)
     {
-        loconet_adapter.loop();
+        loconet_adapter_->loop();
     }
 }
 
@@ -194,17 +214,11 @@ TEST(MrrwaAdapter,MsgReceivedLoopTest)
  * a sensor ID that doesn't have an associated sensor
  */
 
-TEST(MrrwaAdapter,ReceivedDebugTest)
+TEST_F(MrrwaAdapter_test,ReceivedDebugTest)
 {
-    const uint8_t tx_pin=2;
-    LocoNetMock loconet_mock;
-
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin);
-    loconet_adapter.setup();
 
     // Attach one sensor, ID 50
-    Loconet_sensor sensor1("Sen1",50,loconet_adapter);
+    Loconet_sensor sensor1("Sen1",50,*loconet_adapter_);
 
     lnMsg msg;
 
@@ -229,7 +243,7 @@ TEST(MrrwaAdapter,ReceivedDebugTest)
     testing::internal::CaptureStdout();
 
     // Run loop to iterate loconet adapter
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
 
     // Set To Sensor: 72 - Inactive
@@ -241,7 +255,7 @@ TEST(MrrwaAdapter,ReceivedDebugTest)
     msg.srp.chksum = 0x35 ;
 
 
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
 
     std::string output = testing::internal::GetCapturedStdout();
@@ -271,31 +285,23 @@ TEST(MrrwaAdapter,ReceivedDebugTest)
  *
  * Finally process an 'inactive' LN message for a sensor that is active, confirm it goes inactive
  * */
-TEST(MrrwaAdapter,AttachingSensors)
+TEST_F(MrrwaAdapter_test,AttachingSensors)
 {
-    const uint8_t tx_pin=2;
-    LocoNetMock loconet_mock;
-    int const sensor_count = 2;
-
-    // Create an adapter object, dimension it to hold 2 sensors
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,sensor_count);
-    loconet_adapter.setup();
-
+    SetupParams(2,100);
 
     // With no sensors attached, the count should be 0
-    EXPECT_EQ((size_t)0,loconet_adapter.sensor_count());
+    EXPECT_EQ((size_t)0,loconet_adapter_->sensor_count());
 
     // Start adding sensors, checking that the count grows as expected
-    Loconet_sensor sensor50("S50",50,loconet_adapter);
-    EXPECT_EQ((size_t)1,loconet_adapter.sensor_count());
+    Loconet_sensor sensor50("S50",50,*loconet_adapter_);
+    EXPECT_EQ((size_t)1,loconet_adapter_->sensor_count());
 
-    Loconet_sensor sensor42("S42",42,loconet_adapter);
-    EXPECT_EQ((size_t)2,loconet_adapter.sensor_count());
+    Loconet_sensor sensor42("S42",42,*loconet_adapter_);
+    EXPECT_EQ((size_t)2,loconet_adapter_->sensor_count());
 
     // Should be able to add more sensors that we dimensioned loconet_adapter for (sensor_count)
-    Loconet_sensor sensor72("S72",72,loconet_adapter);
-    EXPECT_EQ((size_t)3,loconet_adapter.sensor_count());
+    Loconet_sensor sensor72("S72",72,*loconet_adapter_);
+    EXPECT_EQ((size_t)3,loconet_adapter_->sensor_count());
 
 
     lnMsg msg;
@@ -323,7 +329,7 @@ TEST(MrrwaAdapter,AttachingSensors)
 
 
     // Process the above message; expect only the specific sensor (50) to go active
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
     EXPECT_TRUE(sensor50.is_active());
     EXPECT_FALSE(sensor42.is_active());
@@ -338,7 +344,7 @@ TEST(MrrwaAdapter,AttachingSensors)
     msg.srp.chksum = 0x1E ;
 
     // Process new message. Expect the later sensor (72) to also go active
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
     EXPECT_TRUE(sensor50.is_active());
     EXPECT_FALSE(sensor42.is_active());
@@ -351,7 +357,7 @@ TEST(MrrwaAdapter,AttachingSensors)
     msg.srp.sn2 = 0x60;
     msg.srp.chksum = 0x35 ;
 
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
     EXPECT_TRUE(sensor50.is_active());
     EXPECT_FALSE(sensor42.is_active());
@@ -365,18 +371,15 @@ TEST(MrrwaAdapter,AttachingSensors)
  * Inactive
  * Indeterminate
  */
-TEST(MrrwaAdapter,SensorDebug)
+TEST_F(MrrwaAdapter_test,SensorDebug)
 {
-    LocoNetMock loconet_mock;
     int const sensor_count = 3;
 
-    // Create an adapter object, dimension it to hold 2 sensors
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,sensor_count);
-    loconet_adapter.setup();
+    SetupParams(sensor_count,0);
 
-    Loconet_sensor sensor1("Sensor1",1,loconet_adapter);    // Ensure the constrained name string prints correctly
-    Loconet_sensor sensor2("S2",2,loconet_adapter);
-    Loconet_sensor sensor3("S0003",3,loconet_adapter);
+    Loconet_sensor sensor1("Sensor1",1,*loconet_adapter_);    // Ensure the constrained name string prints correctly
+    Loconet_sensor sensor2("S2",2,*loconet_adapter_);
+    Loconet_sensor sensor3("S0003",3,*loconet_adapter_);
 
     sensor1.set_state(true);            // Active sensor
     sensor2.set_state(false);           // Inactive sensor
@@ -384,7 +387,7 @@ TEST(MrrwaAdapter,SensorDebug)
 
     testing::internal::CaptureStdout();
 
-    loconet_adapter.print_sensors();
+    loconet_adapter_->print_sensors();
 
     std::string output = testing::internal::GetCapturedStdout();
 
@@ -414,26 +417,22 @@ MATCHER_P(test_3_byte_send, bytes, "") {
  * the transmit loop pulls out enqueued messages
  *
  */
-TEST(MrrwaAdapter,TxLoopTest)
+TEST_F(MrrwaAdapter_test,TxLoopTest)
 {
-    const uint8_t tx_pin=2;
     const std::size_t buffer_size = 8;
-    LocoNetMock loconet_mock;
 
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,0,buffer_size);
-    loconet_adapter.setup();
+    SetupParams(0,buffer_size);
 
     // Try to queue 3 messages.  With a buffer of 8, only two 3-byte long
     // messsages (OPC_SW_REQ is 4, the CRC is not stored) can be
     // enqueued
-    EXPECT_EQ(0u,loconet_adapter.get_buffer_high_watermark());
-    EXPECT_TRUE(loconet_adapter.send_opc_sw_req(0x123,true,true));
-    EXPECT_EQ(3u,loconet_adapter.get_buffer_high_watermark());
-    EXPECT_TRUE(loconet_adapter.send_opc_sw_req(0x123,true,false));
-    EXPECT_EQ(6u,loconet_adapter.get_buffer_high_watermark());
-    EXPECT_FALSE(loconet_adapter.send_opc_sw_req(0x123,false,true));
-    EXPECT_EQ(6u,loconet_adapter.get_buffer_high_watermark());
+    EXPECT_EQ(0u,loconet_adapter_->get_buffer_high_watermark());
+    EXPECT_TRUE(loconet_adapter_->send_opc_sw_req(0x123,true,true));
+    EXPECT_EQ(3u,loconet_adapter_->get_buffer_high_watermark());
+    EXPECT_TRUE(loconet_adapter_->send_opc_sw_req(0x123,true,false));
+    EXPECT_EQ(6u,loconet_adapter_->get_buffer_high_watermark());
+    EXPECT_FALSE(loconet_adapter_->send_opc_sw_req(0x123,false,true));
+    EXPECT_EQ(6u,loconet_adapter_->get_buffer_high_watermark());
 
 
     // Expected bytes for send_opc_sw_req(0x123,true,true)
@@ -443,26 +442,26 @@ TEST(MrrwaAdapter,TxLoopTest)
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
 
     set_millis(1);          // Set past 0 so that transmit_loop() will call send
-    loconet_adapter.loop(); // will call send()
+    loconet_adapter_->loop(); // will call send()
 
-    loconet_adapter.loop(); // should not call send() as insufficient time has elapsed
+    loconet_adapter_->loop(); // should not call send() as insufficient time has elapsed
 
     // should be no send errors
-    EXPECT_EQ(0,loconet_adapter.get_tx_error_count());
+    EXPECT_EQ(0,loconet_adapter_->get_tx_error_count());
 
     set_millis(11);
     test_bytes[2] = 0x02;   // Change the 2nd byte to reflect // Expected bytes for send_opc_sw_req(0x123,true,false)
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_RETRY_ERROR)); // Set another 1 time
-    loconet_adapter.loop(); // will call send()
+    loconet_adapter_->loop(); // will call send()
 
     set_millis(20);
-    loconet_adapter.loop(); // should not call send() as insufficient time has elapsed
+    loconet_adapter_->loop(); // should not call send() as insufficient time has elapsed
 
     // High watermark should remain the same after all the dequeuing
-    EXPECT_EQ(6u,loconet_adapter.get_buffer_high_watermark());
+    EXPECT_EQ(6u,loconet_adapter_->get_buffer_high_watermark());
 
     // With one transmit error
-    EXPECT_EQ(1u,loconet_adapter.get_tx_error_count());
+    EXPECT_EQ(1u,loconet_adapter_->get_tx_error_count());
 }
 
 /*
@@ -477,17 +476,13 @@ TEST(MrrwaAdapter,TxLoopTest)
  * and only one 'off' is sent (for the most recent switch direction)
  */
 
-TEST(MrrwaAdapter,LocoNetSwitchTest)
+TEST_F(MrrwaAdapter_test,LocoNetSwitchTest)
 {
-    const uint8_t tx_pin=2;
     const std::size_t buffer_size = 8;
-    LocoNetMock loconet_mock;
 
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,0,buffer_size);
-    loconet_adapter.setup();
+    SetupParams(0,buffer_size);
 
-    Loconet_switch switch1(0x123,&loconet_adapter);
+    Loconet_switch switch1(0x123,loconet_adapter_);
 
 
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
@@ -502,26 +497,26 @@ TEST(MrrwaAdapter,LocoNetSwitchTest)
 
     set_millis(1);
     switch1.loop();
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
     test_bytes[2] = 0x02;   // Change the 2nd byte to reflect 'off'
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
 
     switch1.loop();
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
     set_millis(79);         // Advance time, but not enough
 
     switch1.loop();
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
     set_millis(80);
 
     switch1.loop(); // Now should call send() again
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
     switch1.loop(); // Will not call it again
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
 
     // Now call a ::closed after a ::throw, but before the 80ms passes
@@ -533,7 +528,7 @@ TEST(MrrwaAdapter,LocoNetSwitchTest)
 
     switch1.request_direction(Switch_direction::thrown);
     switch1.loop();
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
 
     set_millis(240);
@@ -542,7 +537,7 @@ TEST(MrrwaAdapter,LocoNetSwitchTest)
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
     switch1.request_direction(Switch_direction::closed);
     switch1.loop();
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
 
     test_bytes[2] = 0x22;   // Change the 2nd byte to represent ::closed, 'off'
@@ -551,7 +546,7 @@ TEST(MrrwaAdapter,LocoNetSwitchTest)
     set_millis(320);
 
     switch1.loop(); // Now should call send() again
-    loconet_adapter.loop();
+    loconet_adapter_->loop();
 
 }
 
@@ -681,23 +676,19 @@ TEST(MrrwaTxBuffer,Dequeue)
     EXPECT_EQ(0,std::memcmp(&read_msg,&msg3,2));
 }
 
-TEST(MrrwaSensorCheck, BasicTest) {
+TEST_F(MrrwaAdapter_test, BasicTest) {
 
-    const uint8_t tx_pin=2;
     const std::size_t buffer_size = 8;
-    LocoNetMock loconet_mock;
+    const std::size_t sensor_count = 2;
 
-    EXPECT_CALL(loconet_mock,init(tx_pin));
-    Mrrwa_loconet_adapter loconet_adapter(loconet_mock,tx_pin,0,buffer_size);
-    loconet_adapter.setup();
+    SetupParams(sensor_count,buffer_size);
 
-    Loconet_sensor sensor1("Sen1",50,loconet_adapter);
-    Loconet_sensor sensor2("Sen2",51,loconet_adapter);
+    Loconet_sensor sensor1("Sen1",50,*loconet_adapter_);
+    Loconet_sensor sensor2("Sen2",51,*loconet_adapter_);
 
-    EXPECT_TRUE(loconet_adapter.any_sensor_indeterminate());
+    EXPECT_TRUE(loconet_adapter_->any_sensor_indeterminate());
     sensor1.set_state(false);
-    EXPECT_TRUE(loconet_adapter.any_sensor_indeterminate());
+    EXPECT_TRUE(loconet_adapter_->any_sensor_indeterminate());
     sensor2.set_state(true);
-    EXPECT_FALSE(loconet_adapter.any_sensor_indeterminate());
-
+    EXPECT_FALSE(loconet_adapter_->any_sensor_indeterminate());
 }
