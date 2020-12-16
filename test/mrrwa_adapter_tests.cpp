@@ -12,6 +12,7 @@
 //#include <limits>
 
 #include "mrrwa_loconet_adapter.h"
+#include "loconet_txmgr.h"
 #include "loconet_switch.h"
 
 #include "gmock/gmock.h"
@@ -108,6 +109,36 @@ protected:
     Mrrwa_loconet_adapter *loconet_adapter_= nullptr;
 };
 
+
+class Loconet_txmgr_test: public ::testing::Test {
+
+
+protected:
+    void SetUp() override
+    {
+        init_millis();
+
+                                    // normal_tx_delay, slow_tx_delay, slow_duration, retransmit_limit
+        tx_mgr_ = new Loconet_txmgr(normal_tx_delay_val_,
+                                    slow_tx_delay_val_,
+                                    slow_tx_duration_val_,
+                                    retransmit_limit_val_);
+
+    }
+
+    void TearDown() override
+    {
+        delete tx_mgr_;
+    }
+
+    Loconet_txmgr *tx_mgr_ = nullptr;
+
+    const Runtime_ms normal_tx_delay_val_   = 20;       // ms
+    const Runtime_ms slow_tx_delay_val_     = 200;      // ms
+    const Runtime_ms slow_tx_duration_val_  = 20000;    // ms
+    const uint8_t    retransmit_limit_val_  = 3;
+
+};
 
 
 /*
@@ -692,3 +723,118 @@ TEST_F(MrrwaAdapter_test, BasicTest) {
     sensor2.set_state(true);
     EXPECT_FALSE(loconet_adapter_->any_sensor_indeterminate());
 }
+
+TEST_F(Loconet_txmgr_test,Basic_Timing) {
+
+    Runtime_ms last_tx_time=0;
+
+    init_millis();
+
+    std::cout << std::dec;
+
+    while(millis() < (slow_tx_duration_val_*2)) {
+
+        if(tx_mgr_->is_tx_allowed(millis())) {
+
+            Runtime_ms time_between_calls = millis() - last_tx_time;
+
+//            std::cout << "millis(): " << millis() << "; between: " << time_between_calls << std::endl;
+
+            if(millis() <= (slow_tx_duration_val_)) {
+//                std::cout << "Slow Duration\n";
+                EXPECT_EQ(time_between_calls,slow_tx_delay_val_);
+
+            }
+            else {
+//                std::cout << "Normal Duration\n";
+                EXPECT_EQ(time_between_calls,normal_tx_delay_val_);
+            }
+
+            last_tx_time = millis();
+        }
+
+        set_millis(millis()+1);
+    }
+}
+
+/*
+ * Check that the retransmit flag triggers one retransmission indication
+ */
+TEST_F(Loconet_txmgr_test,Basic_Retransmission) {
+
+    EXPECT_FALSE(tx_mgr_->is_retransmission());
+    tx_mgr_->set_retransmit();
+    EXPECT_TRUE(tx_mgr_->is_retransmission());
+    EXPECT_FALSE(tx_mgr_->is_retransmission());
+}
+/*
+ * Test that the retransmission limit works
+ */
+
+TEST_F(Loconet_txmgr_test,Retransmission_Limit) {
+
+    // Loop arbitary number of times
+    for(int test_cycle=0; test_cycle <5; test_cycle++) {
+
+
+        // Set the retransmit flag and check is_retransmission() the number
+        // of times allowed by the limit
+        for(int i=0;i<retransmit_limit_val_;i++) {
+
+            tx_mgr_->set_retransmit();
+
+            bool result = tx_mgr_->is_retransmission();
+
+
+            EXPECT_TRUE(result);
+        }
+
+        // Setting it once more should result in is_retransmission() returning false
+        // as the limit of successive retransmits has been met
+        tx_mgr_->set_retransmit();
+
+        bool fin_result = tx_mgr_->is_retransmission();
+
+        EXPECT_FALSE(fin_result);
+    }
+}
+
+
+// Other tests -
+//
+//* 3. If a retransmit is requested, the number of sequential retransmits is limited to avoid an infinite loop
+//* 4. It a retransmit is requested, the longer delay is used for additional spacing for the next message
+// set_millis(millis()+1)
+// EXPECT_EQ
+
+/*
+class Loconet_txmgr_test: public ::testing::Test {
+
+
+protected:
+    void SetUp() override
+    {
+        init_millis();
+
+                                    // normal_tx_delay, slow_tx_delay, slow_duration, retransmit_limit
+        tx_mgr_ = new Loconet_txmgr(normal_tx_delay_val_,
+                                    slow_tx_delay_val_,
+                                    slow_tx_duration_val_,
+                                    retransmit_limit_val_);
+
+    }
+
+    void TearDown() override
+    {
+        delete tx_mgr_;
+    }
+
+    Loconet_txmgr *tx_mgr_ = nullptr;
+
+    const Runtime_ms normal_tx_delay_val_   = 20;       // ms
+    const Runtime_ms slow_tx_delay_val_     = 200;      // ms
+    const Runtime_ms slow_tx_duration_val_  = 20000;    // ms
+    const uint8_t    retransmit_limit_val_  = 3;
+
+ *
+ */

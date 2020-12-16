@@ -48,7 +48,7 @@ public:
      * @return true - inter-message delay has elapsed, can transmit
      *         false - do not transmit yet
      */
-    virtual bool is_tx_allowed() = 0;
+    virtual bool is_tx_allowed(const Runtime_ms) = 0;
 
     /**
      * Indicates that the last transmitted LocoNet message should be
@@ -77,7 +77,9 @@ public:
      * the passed delay to the time before is_tx_allowed() will next
      * return true)
      */
-    virtual void add_tx_delay(Runtime_ms) = 0;
+    virtual void add_tx_delay(const Runtime_ms) = 0;
+
+    virtual ~Loconet_txmgr_interface() = default;
 };
 
 
