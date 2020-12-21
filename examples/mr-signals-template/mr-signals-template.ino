@@ -3,6 +3,7 @@
 #include <mr_signals.h>
 #include <LocoNet.h>
 #include "loconet/mrrwa_loconet_adapter.h"
+#include "loconet/loconet_txmgr.h"
 #include "sensor_interface.h"
 #include "pin_switch.h"
 
@@ -20,7 +21,9 @@ const size_t tx_buffer_size = 600;
 Setup_collection setup_coll(3);
 Loop_collection loop_coll(2);
 
-Mrrwa_loconet_adapter loconet(setup_coll,loop_coll,LocoNet, tx_pin, num_sensors, tx_buffer_size);
+Loconet_txmgr ln_tx_mgr(20, 200, 25000, 3);
+
+Mrrwa_loconet_adapter loconet(setup_coll,loop_coll,LocoNet, tx_pin, num_sensors, tx_buffer_size,ln_tx_mgr);
 
 
 #include "configs/blackwood_south.cc"
@@ -68,6 +71,8 @@ void setup() {
   Serial << F("\n");
 
   all_sensors_head.request_aspect(Head_aspect::red);
+
+  ln_tx_mgr.set_slow_duration(millis());
 }
 
 void loop() {
@@ -94,6 +99,7 @@ void loop() {
   if(Head_aspect::red == all_sensors_head.get_aspect()) {
     if(!loconet.any_sensor_indeterminate()) {
       all_sensors_head.request_aspect(Head_aspect::green);  
+      ln_tx_mgr.set_slow_duration(millis());
     }    
   }
 }

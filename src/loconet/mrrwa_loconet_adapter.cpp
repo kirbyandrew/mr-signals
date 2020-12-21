@@ -7,6 +7,8 @@
 
 #include "mrrwa_loconet_adapter.h"
 
+#include "loconet_txmgr.h"
+
 #include "mr_signals.h"
 
 #include <algorithm>
@@ -88,10 +90,12 @@ namespace mr_signals {
 
 Mrrwa_loconet_adapter::Mrrwa_loconet_adapter(Setup_collection& setup_collection,
                                              Loop_collection& loop_collection,
-                                            LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size) :
+                                            LocoNetClass& loconet,int tx_pin, size_t num_sensors, size_t tx_buffer_size,
+                                            Loconet_txmgr_interface& tx_mgr) :
         Setup_interface(setup_collection), Loop_interface(loop_collection),
-        sensor_init_size_(num_sensors), next_tx_time_ms_(0), send_gp_on_time_ms_(0), next_tx_window_time_(0),msg_tx_window_count_(0),
-        retransmit_(0), tx_errors_(0), long_acks_(0), loconet_(loconet), tx_pin_(tx_pin), any_sensor_indeterminate_(true)
+        sensor_init_size_(num_sensors), send_gp_on_time_ms_(0), next_tx_window_time_(0),msg_tx_window_count_(0),
+        tx_errors_(0), long_acks_(0), loconet_(loconet),tx_mgr_(tx_mgr),
+        tx_pin_(tx_pin), any_sensor_indeterminate_(true)
 {
 
     if(num_sensors) {
@@ -274,8 +278,9 @@ void Mrrwa_loconet_adapter::receive_loop()
 
         if(OPC_LONG_ACK == ln_packet->data[0]) {
             long_acks_++;
-            retransmit_ = 1;
-            next_tx_time_ms_ += 100;
+//            retransmit_ = 1;
+//            next_tx_time_ms_ += 100;
+            tx_mgr_.set_retransmit();
         }
 
         loconet_.processSwitchSensorMessage(ln_packet);
@@ -288,13 +293,12 @@ void Mrrwa_loconet_adapter::transmit_loop()
 {
     bool transmit_msg = false;
 
-    if(get_time_ms() >= next_tx_time_ms_) {
+    if(tx_mgr_.is_tx_allowed(get_time_ms())) {
 
 
-        if(retransmit_) {
+        if(tx_mgr_.is_retransmission()) {
             // ln_msg_ is already loaded with the last transmitted message
             transmit_msg = true;
-            retransmit_ --;
         }
         else if(tx_buffer_.dequeue_loconet_msg(ln_msg_)) {
             transmit_msg = true;
@@ -302,37 +306,28 @@ void Mrrwa_loconet_adapter::transmit_loop()
 
         if(transmit_msg) {
 
-            if(OPC_IDLE == ln_msg_.data[0]) {
-                // Treat as inserted delay with the delay duration being in the second byte
-                next_tx_time_ms_ = get_time_ms() + ln_msg_.data[1];
-            }
+            print_lnMsg(&ln_msg_,"LN TX",false);
 
+            if(LN_DONE != loconet_.send(&ln_msg_)) {
+                tx_errors_++;
+                tx_mgr_.set_retransmit();
+                Serial << "-TX error" << endl;
+            }
             else {
-
-                print_lnMsg(&ln_msg_,"LN TX",false);
-
-                if(LN_DONE != loconet_.send(&ln_msg_)) {
-                    tx_errors_++;
-                    Serial << "-TX error" << endl;
-                }
-                else {
-                    Serial << endl;
-                }
-
-                msg_tx_window_count_++;
-
-                next_tx_time_ms_ = get_time_ms() + transmit_delay_ms_;
+                Serial << endl;
             }
+
+            msg_tx_window_count_++;
         }
     }
 
-
+/*
     if(get_time_ms() >= next_tx_window_time_) {
 
 
         if(msg_tx_window_count_ >= 10) {
             // This means that messages are being sent very rapidly; insert a delay
-            next_tx_time_ms_ += 500;
+//            next_tx_time_ms_ += 500;
             Serial << endl << F("!!Inserting Tx delay due to high tx rate") << endl << endl;
         }
 
@@ -341,7 +336,7 @@ void Mrrwa_loconet_adapter::transmit_loop()
 
         next_tx_window_time_ = get_time_ms() + tx_window_duration_ms_;
     }
-
+*/
 }
 
 

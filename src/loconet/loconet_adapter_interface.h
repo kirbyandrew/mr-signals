@@ -79,6 +79,12 @@ public:
      */
     virtual void add_tx_delay(const Runtime_ms) = 0;
 
+
+    /**
+     *
+     */
+    virtual void set_slow_duration(const Runtime_ms) = 0;
+
     virtual ~Loconet_txmgr_interface() = default;
 };
 

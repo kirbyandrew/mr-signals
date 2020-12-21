@@ -111,7 +111,8 @@ public:
      *                          can be accessed by get_buffer_high_watermark and printed periodically.
      */
     Mrrwa_loconet_adapter(Setup_collection&, Loop_collection&,
-                          LocoNetClass& loconet, int tx_pin=2, size_t num_sensors=0, size_t tx_buffer_size=100);
+                          LocoNetClass& loconet, int tx_pin, size_t num_sensors, size_t tx_buffer_size,
+                          Loconet_txmgr_interface& tx_mgr);
 
 
     /**
@@ -291,7 +292,7 @@ private:
     size_t sensor_init_size_;       // The size the sensor vector is initialized to (to compare against its final size)
 
 
-    Runtime_ms next_tx_time_ms_;    // Next time from get_time_ms() that the
+//    Runtime_ms next_tx_time_ms_;    // Next time from get_time_ms() that the
                                     // adapter will attempt to transmit a
                                     // queued message
 
@@ -305,7 +306,7 @@ private:
 
     uint8_t msg_tx_window_count_;
 
-    uint8_t retransmit_;
+//    uint8_t retransmit_;
 
     Mrrwa_loconet_tx_buffer tx_buffer_;
 
@@ -317,6 +318,9 @@ private:
 
     /// Instance of the MRWWA Loconet Class used by the adapter
     LocoNetClass& loconet_;
+
+    /// Instance of the transmission manager
+    Loconet_txmgr_interface& tx_mgr_;
 
     /// Pin used to transmit
     int tx_pin_;

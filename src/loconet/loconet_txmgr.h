@@ -49,6 +49,11 @@ class Loconet_txmgr : public Loconet_txmgr_interface
 
 public:
 
+    static const Runtime_ms normal_tx_delay_default;    // ms
+    static const Runtime_ms slow_tx_delay_default;      // ms
+    static const Runtime_ms slow_tx_duration_default;   // ms
+    static const uint8_t    retransmit_limit_default;
+
     /**
      * Constructor for the transmission manager
      *
@@ -57,9 +62,13 @@ public:
      * @param normal_tx_delay   -   Normal inter-message delay
      * @param slow_tx_delay     -   Inter-message delay while transmitting messages slowly
      * @param slow_duration     -   Period (from startup) that the system will transmit with a slow delay
+     * @param retransmit_limit  -   Maximum number of retransmissions for a single message
      */
 
-    Loconet_txmgr(Runtime_ms normal_tx_delay, Runtime_ms slow_tx_delay, Runtime_ms slow_duration, uint8_t retransmit_limit);
+    Loconet_txmgr(  Runtime_ms normal_tx_delay  = normal_tx_delay_default,
+                    Runtime_ms slow_tx_delay    = slow_tx_delay_default,
+                    Runtime_ms slow_duration    = slow_tx_duration_default,
+                    uint8_t retransmit_limit    = retransmit_limit_default);
 
     /**
      * To be called in the transmission loop to determine whether the next
@@ -99,6 +108,9 @@ public:
      */
     void add_tx_delay(const Runtime_ms) override;
 
+    void set_slow_duration(const Runtime_ms curr_time) override;
+
+
 protected:
 
     Runtime_ms next_tx_time_;           // The next time stamp to transmit at
@@ -109,6 +121,7 @@ protected:
     Runtime_ms slow_tx_delay_;          // Slow inter-message delay
     Runtime_ms slow_tx_duration_;       // Period (from startup) for slow transmission
     uint8_t    retransmit_limit_;       // Limit of number of retransmission indications
+    Runtime_ms slow_duration_end_;
 };
 
 

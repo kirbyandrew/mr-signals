@@ -84,9 +84,12 @@ protected:
 
         EXPECT_CALL(loconet_mock,init(tx_pin));
 
+        tx_mgr_ = new Loconet_txmgr();
+
         loconet_adapter_ = new Mrrwa_loconet_adapter(*setup_coll_, *loop_coll_,
-                                                     loconet_mock,tx_pin,
-                                                     num_sensors,tx_buffer_size);
+                                                     loconet_mock, tx_pin,
+                                                     num_sensors, tx_buffer_size,
+                                                     *tx_mgr_);
         loconet_adapter_ -> setup();
     }
 
@@ -95,10 +98,12 @@ protected:
         delete setup_coll_;
         delete loop_coll_;
         delete loconet_adapter_;
+        delete tx_mgr_;
 
         setup_coll_ = nullptr;
         loop_coll_ = nullptr;
         loconet_adapter_ = nullptr;
+        tx_mgr_ = nullptr;
     }
 
     const uint8_t tx_pin=2;
@@ -107,6 +112,7 @@ protected:
     Setup_collection *setup_coll_= nullptr;
     Loop_collection *loop_coll_= nullptr;
     Mrrwa_loconet_adapter *loconet_adapter_= nullptr;
+    Loconet_txmgr *tx_mgr_ = nullptr;
 };
 
 
@@ -119,10 +125,10 @@ protected:
         init_millis();
 
                                     // normal_tx_delay, slow_tx_delay, slow_duration, retransmit_limit
-        tx_mgr_ = new Loconet_txmgr(normal_tx_delay_val_,
+        tx_mgr_ = new Loconet_txmgr(); /*normal_tx_delay_val_,
                                     slow_tx_delay_val_,
                                     slow_tx_duration_val_,
-                                    retransmit_limit_val_);
+                                    retransmit_limit_val_);*/
 
     }
 
@@ -133,11 +139,12 @@ protected:
 
     Loconet_txmgr *tx_mgr_ = nullptr;
 
+    /*
     const Runtime_ms normal_tx_delay_val_   = 20;       // ms
-    const Runtime_ms slow_tx_delay_val_     = 200;      // ms
+    const Runtime_ms txmgr_slow_tx_delay_default     = 200;      // ms
     const Runtime_ms slow_tx_duration_val_  = 20000;    // ms
     const uint8_t    retransmit_limit_val_  = 3;
-
+*/
 };
 
 
@@ -154,13 +161,13 @@ TEST(MrrwaAdapter,BasicMappingCalls)
 
     Setup_collection setup_coll(1);
     Loop_collection loop_coll(1);
-
+    Loconet_txmgr tx_mgr(20, 200, 20000,3);
 
 
     EXPECT_CALL(loconet_mock,init(tx_pin));
 
     init_millis();  // Reset the millis() clock (is used in the following constructor)
-    Mrrwa_loconet_adapter loconet_adapter(setup_coll, loop_coll, loconet_mock,tx_pin);
+    Mrrwa_loconet_adapter loconet_adapter(setup_coll, loop_coll, loconet_mock,tx_pin,0,0,tx_mgr);
     loconet_adapter.setup();
 
     // Test the basic expected calls
@@ -454,6 +461,8 @@ TEST_F(MrrwaAdapter_test,TxLoopTest)
 
     SetupParams(0,buffer_size);
 
+    Runtime_ms timestamp = 0;
+
     // Try to queue 3 messages.  With a buffer of 8, only two 3-byte long
     // messsages (OPC_SW_REQ is 4, the CRC is not stored) can be
     // enqueued
@@ -472,7 +481,9 @@ TEST_F(MrrwaAdapter_test,TxLoopTest)
     EXPECT_CALL(loconet_mock,receive()).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
 
-    set_millis(1);          // Set past 0 so that transmit_loop() will call send
+    timestamp = Loconet_txmgr::slow_tx_delay_default;
+
+    set_millis(timestamp);          // Set past 0 so that transmit_loop() will call send
     loconet_adapter_->loop(); // will call send()
 
     loconet_adapter_->loop(); // should not call send() as insufficient time has elapsed
@@ -480,12 +491,14 @@ TEST_F(MrrwaAdapter_test,TxLoopTest)
     // should be no send errors
     EXPECT_EQ(0,loconet_adapter_->get_tx_error_count());
 
-    set_millis(11);
+    timestamp *= 2;
+    set_millis(timestamp);
     test_bytes[2] = 0x02;   // Change the 2nd byte to reflect // Expected bytes for send_opc_sw_req(0x123,true,false)
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_RETRY_ERROR)); // Set another 1 time
     loconet_adapter_->loop(); // will call send()
 
-    set_millis(20);
+    timestamp++;
+    set_millis(timestamp);
     loconet_adapter_->loop(); // should not call send() as insufficient time has elapsed
 
     // High watermark should remain the same after all the dequeuing
@@ -510,6 +523,7 @@ TEST_F(MrrwaAdapter_test,TxLoopTest)
 TEST_F(MrrwaAdapter_test,LocoNetSwitchTest)
 {
     const std::size_t buffer_size = 8;
+    Runtime_ms timestamp = 0;
 
     SetupParams(0,buffer_size);
 
@@ -526,7 +540,10 @@ TEST_F(MrrwaAdapter_test,LocoNetSwitchTest)
     switch1.request_direction(Switch_direction::thrown);
 
 
-    set_millis(1);
+    timestamp = Loconet_txmgr::slow_tx_delay_default;
+
+
+    set_millis(timestamp);
     switch1.loop();
     loconet_adapter_->loop();
 
@@ -536,12 +553,14 @@ TEST_F(MrrwaAdapter_test,LocoNetSwitchTest)
     switch1.loop();
     loconet_adapter_->loop();
 
-    set_millis(79);         // Advance time, but not enough
+    timestamp += 79;
+    set_millis(timestamp);         // Advance time, but not enough for the second switch command
 
     switch1.loop();
     loconet_adapter_->loop();
 
-    set_millis(80);
+    timestamp ++;
+    set_millis(timestamp);      // Advance it again to the point that the second command will be sent
 
     switch1.loop(); // Now should call send() again
     loconet_adapter_->loop();
@@ -552,7 +571,8 @@ TEST_F(MrrwaAdapter_test,LocoNetSwitchTest)
 
     // Now call a ::closed after a ::throw, but before the 80ms passes
     // A ::closed should get called with the 'off' argument
-    set_millis(200);
+    timestamp += 200;
+    set_millis(timestamp);
 
     test_bytes[2] = 0x12;   // Change the 2nd byte to represent ::thrown, 'on'
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
@@ -562,7 +582,8 @@ TEST_F(MrrwaAdapter_test,LocoNetSwitchTest)
     loconet_adapter_->loop();
 
 
-    set_millis(240);
+    timestamp += 40;
+    set_millis(timestamp);
 
     test_bytes[2] = 0x32;   // Change the 2nd byte to represent ::closed, 'on'
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
@@ -574,7 +595,8 @@ TEST_F(MrrwaAdapter_test,LocoNetSwitchTest)
     test_bytes[2] = 0x22;   // Change the 2nd byte to represent ::closed, 'off'
     EXPECT_CALL(loconet_mock,send(test_3_byte_send(test_bytes))).Times(1).WillOnce(Return(LN_DONE)); // Should only be called once in the following
 
-    set_millis(320);
+    timestamp += 80;
+    set_millis(timestamp);
 
     switch1.loop(); // Now should call send() again
     loconet_adapter_->loop();
@@ -730,9 +752,11 @@ TEST_F(Loconet_txmgr_test,Basic_Timing) {
 
     init_millis();
 
+    tx_mgr_->set_slow_duration(millis());
+
     std::cout << std::dec;
 
-    while(millis() < (slow_tx_duration_val_*2)) {
+    while(millis() < (Loconet_txmgr::slow_tx_duration_default * 2)) {
 
         if(tx_mgr_->is_tx_allowed(millis())) {
 
@@ -740,14 +764,14 @@ TEST_F(Loconet_txmgr_test,Basic_Timing) {
 
 //            std::cout << "millis(): " << millis() << "; between: " << time_between_calls << std::endl;
 
-            if(millis() <= (slow_tx_duration_val_)) {
+            if(millis() <= (Loconet_txmgr::slow_tx_duration_default)) {
 //                std::cout << "Slow Duration\n";
-                EXPECT_EQ(time_between_calls,slow_tx_delay_val_);
+                EXPECT_EQ(time_between_calls,Loconet_txmgr::slow_tx_delay_default);
 
             }
             else {
 //                std::cout << "Normal Duration\n";
-                EXPECT_EQ(time_between_calls,normal_tx_delay_val_);
+                EXPECT_EQ(time_between_calls,Loconet_txmgr::normal_tx_delay_default);
             }
 
             last_tx_time = millis();
@@ -773,13 +797,16 @@ TEST_F(Loconet_txmgr_test,Basic_Retransmission) {
 
 TEST_F(Loconet_txmgr_test,Retransmission_Limit) {
 
+
+    tx_mgr_->set_slow_duration(millis());
+
     // Loop arbitary number of times
     for(int test_cycle=0; test_cycle <5; test_cycle++) {
 
 
         // Set the retransmit flag and check is_retransmission() the number
         // of times allowed by the limit
-        for(int i=0;i<retransmit_limit_val_;i++) {
+        for(int i=0;i<Loconet_txmgr::retransmit_limit_default;i++) {
 
             tx_mgr_->set_retransmit();
 
@@ -799,42 +826,3 @@ TEST_F(Loconet_txmgr_test,Retransmission_Limit) {
     }
 }
 
-
-// Other tests -
-//
-//* 3. If a retransmit is requested, the number of sequential retransmits is limited to avoid an infinite loop
-//* 4. It a retransmit is requested, the longer delay is used for additional spacing for the next message
-// set_millis(millis()+1)
-// EXPECT_EQ
-
-/*
-class Loconet_txmgr_test: public ::testing::Test {
-
-
-protected:
-    void SetUp() override
-    {
-        init_millis();
-
-                                    // normal_tx_delay, slow_tx_delay, slow_duration, retransmit_limit
-        tx_mgr_ = new Loconet_txmgr(normal_tx_delay_val_,
-                                    slow_tx_delay_val_,
-                                    slow_tx_duration_val_,
-                                    retransmit_limit_val_);
-
-    }
-
-    void TearDown() override
-    {
-        delete tx_mgr_;
-    }
-
-    Loconet_txmgr *tx_mgr_ = nullptr;
-
-    const Runtime_ms normal_tx_delay_val_   = 20;       // ms
-    const Runtime_ms slow_tx_delay_val_     = 200;      // ms
-    const Runtime_ms slow_tx_duration_val_  = 20000;    // ms
-    const uint8_t    retransmit_limit_val_  = 3;
-
- *
- */

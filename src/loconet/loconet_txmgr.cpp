@@ -10,7 +10,13 @@
 namespace mr_signals {
 
 
-//Loconet_txmgr::Loconet_txmgr(): next_tx_time_(0),retransmit_flag_(false) {}
+// Define static constant members for external use
+const Runtime_ms Loconet_txmgr::normal_tx_delay_default    = 20;       // ms
+const Runtime_ms Loconet_txmgr::slow_tx_delay_default      = 200;      // ms
+const Runtime_ms Loconet_txmgr::slow_tx_duration_default   = 20000;    // ms
+const uint8_t    Loconet_txmgr::retransmit_limit_default   = 3;
+
+
 
 
 Loconet_txmgr::Loconet_txmgr(   Runtime_ms normal_tx_delay,
@@ -24,7 +30,8 @@ Loconet_txmgr::Loconet_txmgr(   Runtime_ms normal_tx_delay,
                                 normal_tx_delay_(normal_tx_delay),
                                 slow_tx_delay_(slow_tx_delay),
                                 slow_tx_duration_(slow_duration),
-                                retransmit_limit_(retransmit_limit)
+                                retransmit_limit_(retransmit_limit),
+                                slow_duration_end_(0)
 {
 
 }
@@ -38,7 +45,7 @@ bool Loconet_txmgr::is_tx_allowed(const Runtime_ms current_time_ms)
         // For initial 'slow' period, space messages with the slow duration
         // to avoid filling the command station Loconet->DCC buffer and
         // ending up receiving LONG_ACKs
-        if(current_time_ms < slow_tx_duration_) {
+        if(current_time_ms < slow_duration_end_) {
             next_tx_time_ += slow_tx_delay_;
         }
         else {
@@ -82,6 +89,12 @@ void Loconet_txmgr::set_retransmit()
 void Loconet_txmgr::add_tx_delay(const Runtime_ms delay)
 {
     next_tx_time_ += delay;
+}
+
+
+void Loconet_txmgr::set_slow_duration(const Runtime_ms curr_time)
+{
+    slow_duration_end_ = curr_time + slow_tx_duration_;
 }
 
 
